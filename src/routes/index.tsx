@@ -110,7 +110,7 @@ function HomePage() {
         {/* Botões */}
         <section className="mt-8 space-y-3">
           <button
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/pedido" })}
             className="flex w-full items-center gap-4 rounded-xl bg-primary px-5 py-6 text-left text-primary-foreground transition hover:opacity-95"
           >
             <ShoppingCart size={28} />
