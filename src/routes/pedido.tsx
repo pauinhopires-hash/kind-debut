@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus, Check } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Check, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -24,11 +25,11 @@ function PedidoPage() {
   const navigate = useNavigate();
   const { user, usuario, loading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [estoque, setEstoque] = useState<Record<string, number>>({});
   const [carregando, setCarregando] = useState(true);
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
 
   useEffect(() => {
@@ -39,13 +40,17 @@ function PedidoPage() {
     if (!user) return;
     (async () => {
       setCarregando(true);
-      const { data, error } = await supabase
-        .from("produtos")
-        .select("id, nome, unidade")
-        .eq("ativo", true)
-        .order("nome");
-      if (error) setErro(error.message);
-      setProdutos((data ?? []) as Produto[]);
+      const [{ data: prods, error: e1 }, { data: est }] = await Promise.all([
+        supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
+        supabase.from("estoque_atual").select("produto_id, quantidade"),
+      ]);
+      if (e1) toast.error("Erro ao carregar produtos", { description: e1.message });
+      setProdutos((prods ?? []) as Produto[]);
+      const map: Record<string, number> = {};
+      (est ?? []).forEach((r: { produto_id: string; quantidade: number }) => {
+        map[r.produto_id] = Number(r.quantidade);
+      });
+      setEstoque(map);
       setCarregando(false);
     })();
   }, [user]);
@@ -57,6 +62,34 @@ function PedidoPage() {
       else novo[id] = valor;
       return novo;
     });
+  };
+
+  const repetirUltimo = async () => {
+    if (!user) return;
+    const { data: req } = await supabase
+      .from("requisicoes")
+      .select("id")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!req) {
+      toast.info("Nenhum pedido anterior encontrado");
+      return;
+    }
+    const { data: itens } = await supabase
+      .from("requisicao_itens")
+      .select("produto_id, quantidade")
+      .eq("requisicao_id", req.id);
+    if (!itens || itens.length === 0) {
+      toast.info("Pedido anterior estava vazio");
+      return;
+    }
+    const map: Record<string, number> = {};
+    itens.forEach((i) => {
+      map[i.produto_id] = Number(i.quantidade);
+    });
+    setQuantidades(map);
+    toast.success(`${itens.length} itens carregados do último pedido`);
   };
 
   const itensSelecionados = useMemo(
@@ -73,7 +106,6 @@ function PedidoPage() {
   const handleSalvar = async () => {
     if (!user || !usuario || itensSelecionados.length === 0) return;
     setSalvando(true);
-    setErro(null);
 
     const { data: req, error: e1 } = await supabase
       .from("requisicoes")
@@ -87,7 +119,7 @@ function PedidoPage() {
       .single();
 
     if (e1 || !req) {
-      setErro(e1?.message ?? "Erro ao criar requisição");
+      toast.error("Erro ao criar requisição", { description: e1?.message });
       setSalvando(false);
       return;
     }
@@ -101,9 +133,10 @@ function PedidoPage() {
     const { error: e2 } = await supabase.from("requisicao_itens").insert(itens);
     setSalvando(false);
     if (e2) {
-      setErro(e2.message);
+      toast.error("Erro ao salvar itens", { description: e2.message });
       return;
     }
+    toast.success("Pedido enviado", { description: `${itens.length} itens registrados.` });
     navigate({ to: "/" });
   };
 
@@ -126,10 +159,17 @@ function PedidoPage() {
           >
             <ArrowLeft size={18} />
           </button>
-          <div>
+          <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-primary">Nova requisição</p>
             <h1 className="text-lg font-bold text-foreground">Fazer pedido</h1>
           </div>
+          <button
+            onClick={repetirUltimo}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition hover:border-primary"
+          >
+            <RotateCcw size={14} />
+            Repetir
+          </button>
         </div>
       </header>
 
@@ -155,6 +195,7 @@ function PedidoPage() {
             {produtosFiltrados.map((p) => {
               const qtd = quantidades[p.id] ?? 0;
               const ativo = qtd > 0;
+              const est = estoque[p.id];
               return (
                 <li
                   key={p.id}
@@ -164,7 +205,17 @@ function PedidoPage() {
                 >
                   <div className="min-w-0 flex-1 pr-3">
                     <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
-                    <p className="text-xs text-muted-foreground">Unidade: {p.unidade}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Unid.: {p.unidade}
+                      {est !== undefined && (
+                        <>
+                          {" · "}
+                          <span className={est <= 0 ? "text-destructive" : "text-foreground/70"}>
+                            Estoque: {est}
+                          </span>
+                        </>
+                      )}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -215,8 +266,6 @@ function PedidoPage() {
             />
           </div>
         )}
-
-        {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
       </div>
 
       {/* Barra fixa de envio */}
