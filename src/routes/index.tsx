@@ -121,7 +121,7 @@ function HomePage() {
           </button>
 
           <button
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/historico" })}
             className="flex w-full items-center gap-4 rounded-xl border border-border bg-card px-5 py-5 text-left text-foreground transition hover:border-primary/50"
           >
             <ClipboardList size={24} className="text-primary" />
@@ -132,7 +132,7 @@ function HomePage() {
           </button>
 
           <button
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/exportar" })}
             className="flex w-full items-center gap-4 rounded-xl border border-border bg-card px-5 py-5 text-left text-foreground transition hover:border-primary/50"
           >
             <Share2 size={24} className="text-primary" />
