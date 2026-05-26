@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PedidoRouteImport } from './routes/pedido'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HistoricoRouteImport } from './routes/historico'
+import { Route as ExportarRouteImport } from './routes/exportar'
 import { Route as IndexRouteImport } from './routes/index'
 
 const PedidoRoute = PedidoRouteImport.update({
@@ -23,6 +25,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HistoricoRoute = HistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExportarRoute = ExportarRouteImport.update({
+  id: '/exportar',
+  path: '/exportar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +43,38 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/exportar': typeof ExportarRoute
+  '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/exportar': typeof ExportarRoute
+  '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/exportar': typeof ExportarRoute
+  '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/pedido'
+  fullPaths: '/' | '/exportar' | '/historico' | '/login' | '/pedido'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/pedido'
-  id: '__root__' | '/' | '/login' | '/pedido'
+  to: '/' | '/exportar' | '/historico' | '/login' | '/pedido'
+  id: '__root__' | '/' | '/exportar' | '/historico' | '/login' | '/pedido'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ExportarRoute: typeof ExportarRoute
+  HistoricoRoute: typeof HistoricoRoute
   LoginRoute: typeof LoginRoute
   PedidoRoute: typeof PedidoRoute
 }
@@ -75,6 +95,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/historico': {
+      id: '/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof HistoricoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exportar': {
+      id: '/exportar'
+      path: '/exportar'
+      fullPath: '/exportar'
+      preLoaderRoute: typeof ExportarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +121,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ExportarRoute: ExportarRoute,
+  HistoricoRoute: HistoricoRoute,
   LoginRoute: LoginRoute,
   PedidoRoute: PedidoRoute,
 }
