@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogOut, ShoppingCart, ClipboardList, Share2 } from "lucide-react";
+import { LogOut, ShoppingCart, ClipboardList, Share2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -37,7 +37,7 @@ function formatarHora(d: Date) {
 
 function HomePage() {
   const navigate = useNavigate();
-  const { user, usuario, perfil, loading } = useAuth();
+  const { user, usuario, perfil, isAdmin, loading } = useAuth();
   const agora = useRelogio();
 
   useEffect(() => {
@@ -141,6 +141,19 @@ function HomePage() {
               <p className="text-xs text-muted-foreground">Compartilhar com o fornecedor</p>
             </div>
           </button>
+
+          {isAdmin && (
+            <button
+              onClick={() => navigate({ to: "/admin" })}
+              className="flex w-full items-center gap-4 rounded-xl border border-border bg-card px-5 py-5 text-left text-foreground transition hover:border-primary/50"
+            >
+              <Settings size={24} className="text-primary" />
+              <div>
+                <p className="text-base font-semibold uppercase tracking-wide">Admin</p>
+                <p className="text-xs text-muted-foreground">Produtos, estoque e usuários</p>
+              </div>
+            </button>
+          )}
         </section>
       </div>
     </main>

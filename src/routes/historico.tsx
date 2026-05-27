@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Clock, Pencil, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -52,18 +53,20 @@ function HistoricoPage() {
     if (!loading && !user) navigate({ to: "/login" });
   }, [loading, user, navigate]);
 
+  const carregar = async () => {
+    setCarregando(true);
+    const { data, error } = await supabase
+      .from("requisicoes")
+      .select("id, status, observacao, created_at")
+      .order("created_at", { ascending: false });
+    if (error) setErro(error.message);
+    setReqs((data ?? []) as Requisicao[]);
+    setCarregando(false);
+  };
+
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      setCarregando(true);
-      const { data, error } = await supabase
-        .from("requisicoes")
-        .select("id, status, observacao, created_at")
-        .order("created_at", { ascending: false });
-      if (error) setErro(error.message);
-      setReqs((data ?? []) as Requisicao[]);
-      setCarregando(false);
-    })();
+    carregar();
   }, [user]);
 
   const toggle = async (id: string) => {
@@ -79,6 +82,17 @@ function HistoricoPage() {
         .eq("requisicao_id", id);
       setItens((prev) => ({ ...prev, [id]: (data ?? []) as unknown as Item[] }));
     }
+  };
+
+  const cancelar = async (r: Requisicao) => {
+    if (!confirm("Cancelar esta requisição?")) return;
+    const { error } = await supabase
+      .from("requisicoes")
+      .update({ status: "cancelada" })
+      .eq("id", r.id);
+    if (error) return toast.error("Erro ao cancelar", { description: error.message });
+    toast.success("Requisição cancelada");
+    carregar();
   };
 
   if (loading || !user) {
@@ -124,6 +138,7 @@ function HistoricoPage() {
             {reqs.map((r) => {
               const isAberto = aberto === r.id;
               const lista = itens[r.id] ?? [];
+              const pendente = r.status === "pendente";
               return (
                 <li
                   key={r.id}
@@ -137,7 +152,15 @@ function HistoricoPage() {
                       <p className="text-sm font-semibold text-foreground">
                         {formatarDataHora(r.created_at)}
                       </p>
-                      <p className="mt-0.5 text-xs uppercase tracking-wider text-primary">
+                      <p
+                        className={`mt-0.5 text-xs uppercase tracking-wider ${
+                          r.status === "cancelada"
+                            ? "text-destructive"
+                            : pendente
+                              ? "text-primary"
+                              : "text-foreground/70"
+                        }`}
+                      >
                         {r.status}
                       </p>
                     </div>
@@ -170,8 +193,26 @@ function HistoricoPage() {
                       )}
                       {r.observacao && (
                         <p className="mt-3 border-t border-border pt-2 text-xs italic text-muted-foreground">
-                          “{r.observacao}”
+                          "{r.observacao}"
                         </p>
+                      )}
+                      {pendente && (
+                        <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                          <button
+                            onClick={() =>
+                              navigate({ to: "/pedido/editar/$id", params: { id: r.id } })
+                            }
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:border-primary"
+                          >
+                            <Pencil size={12} /> Editar
+                          </button>
+                          <button
+                            onClick={() => cancelar(r)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10"
+                          >
+                            <XCircle size={12} /> Cancelar
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
