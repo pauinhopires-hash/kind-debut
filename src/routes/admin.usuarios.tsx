@@ -74,8 +74,7 @@ function AdminUsuarios() {
       if (error) return toast.error("Erro", { description: error.message });
       toast.success("Admin removido");
     } else {
-      const { error } = await supabase
-        .from("user_roles" as never)
+      const { error } = await (supabase.from("user_roles" as never) as any)
         .insert({ user_id: u.id, role: "admin" });
       if (error) return toast.error("Erro", { description: error.message });
       toast.success("Promovido a admin");
