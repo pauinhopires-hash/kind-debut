@@ -17,6 +17,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [usuario, setUsuario] = useState<UsuarioRow | null>(null);
   const [perfil, setPerfil] = useState<PerfilRow | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export function useAuth() {
       if (!s?.user) {
         setUsuario(null);
         setPerfil(null);
+        setIsAdmin(false);
       }
     });
 
@@ -57,11 +59,20 @@ export function useAuth() {
           .maybeSingle();
         if (!cancelled) setPerfil(p as PerfilRow | null);
       }
+      // role
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      if (!cancelled) {
+        const list = (roles ?? []) as Array<{ role: string }>;
+        setIsAdmin(list.some((r) => r.role === "admin"));
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [user]);
 
-  return { session, user, usuario, perfil, loading };
+  return { session, user, usuario, perfil, isAdmin, loading };
 }

@@ -13,7 +13,13 @@ import { Route as PedidoRouteImport } from './routes/pedido'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as ExportarRouteImport } from './routes/exportar'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
+import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
+import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
 
 const PedidoRoute = PedidoRouteImport.update({
   id: '/pedido',
@@ -35,48 +41,129 @@ const ExportarRoute = ExportarRouteImport.update({
   path: '/exportar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProdutosRoute = AdminProdutosRouteImport.update({
+  id: '/produtos',
+  path: '/produtos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEstoqueRoute = AdminEstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
+  getParentRoute: () => AdminRoute,
+} as any)
+const PedidoEditarIdRoute = PedidoEditarIdRouteImport.update({
+  id: '/editar/$id',
+  path: '/editar/$id',
+  getParentRoute: () => PedidoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/exportar': typeof ExportarRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
-  '/pedido': typeof PedidoRoute
+  '/pedido': typeof PedidoRouteWithChildren
+  '/admin/estoque': typeof AdminEstoqueRoute
+  '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/': typeof AdminIndexRoute
+  '/pedido/editar/$id': typeof PedidoEditarIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/exportar': typeof ExportarRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
-  '/pedido': typeof PedidoRoute
+  '/pedido': typeof PedidoRouteWithChildren
+  '/admin/estoque': typeof AdminEstoqueRoute
+  '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin': typeof AdminIndexRoute
+  '/pedido/editar/$id': typeof PedidoEditarIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/exportar': typeof ExportarRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
-  '/pedido': typeof PedidoRoute
+  '/pedido': typeof PedidoRouteWithChildren
+  '/admin/estoque': typeof AdminEstoqueRoute
+  '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/': typeof AdminIndexRoute
+  '/pedido/editar/$id': typeof PedidoEditarIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/exportar' | '/historico' | '/login' | '/pedido'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/exportar'
+    | '/historico'
+    | '/login'
+    | '/pedido'
+    | '/admin/estoque'
+    | '/admin/produtos'
+    | '/admin/usuarios'
+    | '/admin/'
+    | '/pedido/editar/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/exportar' | '/historico' | '/login' | '/pedido'
-  id: '__root__' | '/' | '/exportar' | '/historico' | '/login' | '/pedido'
+  to:
+    | '/'
+    | '/exportar'
+    | '/historico'
+    | '/login'
+    | '/pedido'
+    | '/admin/estoque'
+    | '/admin/produtos'
+    | '/admin/usuarios'
+    | '/admin'
+    | '/pedido/editar/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/exportar'
+    | '/historico'
+    | '/login'
+    | '/pedido'
+    | '/admin/estoque'
+    | '/admin/produtos'
+    | '/admin/usuarios'
+    | '/admin/'
+    | '/pedido/editar/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   ExportarRoute: typeof ExportarRoute
   HistoricoRoute: typeof HistoricoRoute
   LoginRoute: typeof LoginRoute
-  PedidoRoute: typeof PedidoRoute
+  PedidoRoute: typeof PedidoRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -109,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExportarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -116,26 +210,79 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/produtos': {
+      id: '/admin/produtos'
+      path: '/produtos'
+      fullPath: '/admin/produtos'
+      preLoaderRoute: typeof AdminProdutosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/estoque': {
+      id: '/admin/estoque'
+      path: '/estoque'
+      fullPath: '/admin/estoque'
+      preLoaderRoute: typeof AdminEstoqueRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/pedido/editar/$id': {
+      id: '/pedido/editar/$id'
+      path: '/editar/$id'
+      fullPath: '/pedido/editar/$id'
+      preLoaderRoute: typeof PedidoEditarIdRouteImport
+      parentRoute: typeof PedidoRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminEstoqueRoute: typeof AdminEstoqueRoute
+  AdminProdutosRoute: typeof AdminProdutosRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminEstoqueRoute: AdminEstoqueRoute,
+  AdminProdutosRoute: AdminProdutosRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface PedidoRouteChildren {
+  PedidoEditarIdRoute: typeof PedidoEditarIdRoute
+}
+
+const PedidoRouteChildren: PedidoRouteChildren = {
+  PedidoEditarIdRoute: PedidoEditarIdRoute,
+}
+
+const PedidoRouteWithChildren =
+  PedidoRoute._addFileChildren(PedidoRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   ExportarRoute: ExportarRoute,
   HistoricoRoute: HistoricoRoute,
   LoginRoute: LoginRoute,
-  PedidoRoute: PedidoRoute,
+  PedidoRoute: PedidoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
