@@ -30,7 +30,7 @@ function AdminUsuarios() {
     const [{ data: us }, { data: pfs }, { data: rs }] = await Promise.all([
       supabase.from("usuarios").select("id, nome, email, ativo, perfil_id").order("nome"),
       supabase.from("perfis").select("id, nome").order("nome"),
-      supabase.from("user_roles" as never).select("user_id, role"),
+      supabase.from("user_roles").select("user_id, role"),
     ]);
     setUsuarios((us ?? []) as Usuario[]);
     setPerfis((pfs ?? []) as Perfil[]);
@@ -67,14 +67,14 @@ function AdminUsuarios() {
     const eraAdmin = adminIds.has(u.id);
     if (eraAdmin) {
       const { error } = await supabase
-        .from("user_roles" as never)
+        .from("user_roles")
         .delete()
         .eq("user_id", u.id)
         .eq("role", "admin");
       if (error) return toast.error("Erro", { description: error.message });
       toast.success("Admin removido");
     } else {
-      const { error } = await (supabase.from("user_roles" as never) as any)
+      const { error } = await supabase.from("user_roles")
         .insert({ user_id: u.id, role: "admin" });
       if (error) return toast.error("Erro", { description: error.message });
       toast.success("Promovido a admin");

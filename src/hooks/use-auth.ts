@@ -61,7 +61,7 @@ export function useAuth() {
       }
       // role
       const { data: roles } = await supabase
-        .from("user_roles" as never)
+        .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
       if (!cancelled) {
