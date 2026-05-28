@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Copy, Check, Share2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Copy, Check, Share2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -37,6 +37,7 @@ function ExportarPage() {
   const [carregando, setCarregando] = useState(true);
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const csvRef = useRef<{ nome: string; rows: Array<[string, number, string]> }>({ nome: "pedido", rows: [] });
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
