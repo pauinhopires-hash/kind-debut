@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Copy, Check, Share2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Copy, Check, Share2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -37,6 +37,7 @@ function ExportarPage() {
   const [carregando, setCarregando] = useState(true);
   const [copiado, setCopiado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const csvRef = useRef<{ nome: string; rows: Array<[string, number, string]> }>({ nome: "pedido", rows: [] });
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -91,10 +92,29 @@ function ExportarPage() {
         .filter(Boolean)
         .join("\n");
 
+      csvRef.current = {
+        nome: `pedido-${new Date(req.created_at).toISOString().slice(0, 10)}`,
+        rows: lista.map((it) => [it.produtos?.nome ?? "Produto", it.quantidade, it.produtos?.unidade ?? ""]),
+      };
+
       setTexto(linhas);
       setCarregando(false);
     })();
   }, [user, usuario, perfil]);
+
+  const baixarCSV = () => {
+    const header = "Produto,Quantidade,Unidade\n";
+    const body = csvRef.current.rows
+      .map((r) => `"${r[0].replace(/"/g, '""')}",${r[1]},${r[2]}`)
+      .join("\n");
+    const blob = new Blob(["\ufeff" + header + body], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${csvRef.current.nome}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const copiar = async () => {
     await navigator.clipboard.writeText(texto);
@@ -173,6 +193,13 @@ function ExportarPage() {
                 Compartilhar
               </button>
             </div>
+            <button
+              onClick={baixarCSV}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary"
+            >
+              <Download size={16} />
+              Baixar CSV
+            </button>
           </>
         )}
       </div>
