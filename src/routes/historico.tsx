@@ -152,17 +152,30 @@ function HistoricoPage() {
                       <p className="text-sm font-semibold text-foreground">
                         {formatarDataHora(r.created_at)}
                       </p>
-                      <p
-                        className={`mt-0.5 text-xs uppercase tracking-wider ${
+                      <span
+                        className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${
                           r.status === "cancelada"
-                            ? "text-destructive"
-                            : pendente
-                              ? "text-primary"
-                              : "text-foreground/70"
+                            ? "bg-destructive/15 text-destructive"
+                            : r.status === "aprovada"
+                              ? "bg-emerald-500/15 text-emerald-500"
+                              : pendente
+                                ? "bg-primary/15 text-primary"
+                                : "bg-muted text-muted-foreground"
                         }`}
                       >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            r.status === "cancelada"
+                              ? "bg-destructive"
+                              : r.status === "aprovada"
+                                ? "bg-emerald-500"
+                                : pendente
+                                  ? "bg-primary"
+                                  : "bg-muted-foreground"
+                          }`}
+                        />
                         {r.status}
-                      </p>
+                      </span>
                     </div>
                     {isAberto ? (
                       <ChevronUp size={18} className="text-muted-foreground" />
