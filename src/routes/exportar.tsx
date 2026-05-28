@@ -193,6 +193,13 @@ function ExportarPage() {
                 Compartilhar
               </button>
             </div>
+            <button
+              onClick={baixarCSV}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary"
+            >
+              <Download size={16} />
+              Baixar CSV
+            </button>
           </>
         )}
       </div>
