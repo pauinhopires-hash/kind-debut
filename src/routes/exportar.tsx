@@ -92,10 +92,29 @@ function ExportarPage() {
         .filter(Boolean)
         .join("\n");
 
+      csvRef.current = {
+        nome: `pedido-${new Date(req.created_at).toISOString().slice(0, 10)}`,
+        rows: lista.map((it) => [it.produtos?.nome ?? "Produto", it.quantidade, it.produtos?.unidade ?? ""]),
+      };
+
       setTexto(linhas);
       setCarregando(false);
     })();
   }, [user, usuario, perfil]);
+
+  const baixarCSV = () => {
+    const header = "Produto,Quantidade,Unidade\n";
+    const body = csvRef.current.rows
+      .map((r) => `"${r[0].replace(/"/g, '""')}",${r[1]},${r[2]}`)
+      .join("\n");
+    const blob = new Blob(["\ufeff" + header + body], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${csvRef.current.nome}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const copiar = async () => {
     await navigator.clipboard.writeText(texto);
