@@ -80,26 +80,41 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          grupo: string | null
           id: string
+          local: string | null
           nome: string
           perfil_id: string | null
+          setor: string | null
+          subgrupo: string | null
           unidade: string
+          valor_unitario: number | null
         }
         Insert: {
           ativo?: boolean
           created_at?: string
+          grupo?: string | null
           id?: string
+          local?: string | null
           nome: string
           perfil_id?: string | null
+          setor?: string | null
+          subgrupo?: string | null
           unidade?: string
+          valor_unitario?: number | null
         }
         Update: {
           ativo?: boolean
           created_at?: string
+          grupo?: string | null
           id?: string
+          local?: string | null
           nome?: string
           perfil_id?: string | null
+          setor?: string | null
+          subgrupo?: string | null
           unidade?: string
+          valor_unitario?: number | null
         }
         Relationships: [
           {
