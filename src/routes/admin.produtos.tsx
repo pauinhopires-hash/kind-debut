@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,9 +15,18 @@ type Produto = {
   unidade: string;
   ativo: boolean;
   perfil_id: string | null;
+  grupo: string | null;
+  subgrupo: string | null;
+  setor: string | null;
+  local: string | null;
+  valor_unitario: number | null;
 };
 
 type Perfil = { id: string; nome: string };
+
+const UNIDADES = ["UND", "KG", "CX", "PC", "PCT", "LT"];
+const SETORES = ["COZINHA", "ESTOQUE CENTRAL", "FRENTE"];
+const LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"];
 
 function AdminProdutos() {
   const navigate = useNavigate();
@@ -27,17 +36,27 @@ function AdminProdutos() {
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
   const [novo, setNovo] = useState(false);
-  const [form, setForm] = useState<{ nome: string; unidade: string; perfil_id: string; ativo: boolean }>({
+  const [busca, setBusca] = useState("");
+  const [filtroPerfil, setFiltroPerfil] = useState("");
+  const [form, setForm] = useState({
     nome: "",
-    unidade: "un",
+    unidade: "UND",
     perfil_id: "",
+    grupo: "",
+    subgrupo: "",
+    setor: "",
+    local: "",
+    valor_unitario: "" as string,
     ativo: true,
   });
 
   const carregar = async () => {
     setCarregando(true);
     const [{ data: prods }, { data: pfs }] = await Promise.all([
-      supabase.from("produtos").select("id, nome, unidade, ativo, perfil_id").order("nome"),
+      supabase
+        .from("produtos")
+        .select("id, nome, unidade, ativo, perfil_id, grupo, subgrupo, setor, local, valor_unitario")
+        .order("nome"),
       supabase.from("perfis").select("id, nome").order("nome"),
     ]);
     setProdutos((prods ?? []) as Produto[]);
@@ -49,14 +68,43 @@ function AdminProdutos() {
     carregar();
   }, []);
 
+  const filtrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return produtos.filter((p) => {
+      if (filtroPerfil && p.perfil_id !== filtroPerfil) return false;
+      if (q && !p.nome.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [produtos, busca, filtroPerfil]);
+
   const abrirNovo = () => {
-    setForm({ nome: "", unidade: "un", perfil_id: usuario?.perfil_id ?? "", ativo: true });
+    setForm({
+      nome: "",
+      unidade: "UND",
+      perfil_id: usuario?.perfil_id ?? "",
+      grupo: "",
+      subgrupo: "",
+      setor: "",
+      local: "",
+      valor_unitario: "",
+      ativo: true,
+    });
     setEditando(null);
     setNovo(true);
   };
 
   const abrirEditar = (p: Produto) => {
-    setForm({ nome: p.nome, unidade: p.unidade, perfil_id: p.perfil_id ?? "", ativo: p.ativo });
+    setForm({
+      nome: p.nome,
+      unidade: p.unidade,
+      perfil_id: p.perfil_id ?? "",
+      grupo: p.grupo ?? "",
+      subgrupo: p.subgrupo ?? "",
+      setor: p.setor ?? "",
+      local: p.local ?? "",
+      valor_unitario: p.valor_unitario != null ? String(p.valor_unitario) : "",
+      ativo: p.ativo,
+    });
     setEditando(p);
     setNovo(false);
   };
@@ -67,14 +115,20 @@ function AdminProdutos() {
   };
 
   const salvar = async () => {
-    if (!form.nome.trim()) {
-      toast.error("Informe o nome");
-      return;
-    }
+    if (!form.nome.trim()) return toast.error("Informe o nome");
+    const valor = form.valor_unitario.trim()
+      ? Number(form.valor_unitario.replace(",", "."))
+      : null;
+    if (valor !== null && Number.isNaN(valor)) return toast.error("Valor inválido");
     const payload = {
       nome: form.nome.trim(),
-      unidade: form.unidade.trim() || "un",
+      unidade: form.unidade.trim() || "UND",
       perfil_id: form.perfil_id || null,
+      grupo: form.grupo.trim() || null,
+      subgrupo: form.subgrupo.trim() || null,
+      setor: form.setor || null,
+      local: form.local || null,
+      valor_unitario: valor,
       ativo: form.ativo,
     };
     if (editando) {
@@ -111,7 +165,7 @@ function AdminProdutos() {
           </button>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>
-            <h1 className="text-lg font-bold text-foreground">Produtos</h1>
+            <h1 className="text-lg font-bold text-foreground">Produtos ({produtos.length})</h1>
           </div>
           <button
             onClick={abrirNovo}
@@ -122,32 +176,52 @@ function AdminProdutos() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md px-6 pt-4">
+      <div className="mx-auto max-w-md space-y-3 px-6 pt-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar produto..."
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary"
+          />
+        </div>
+        <select
+          value={filtroPerfil}
+          onChange={(e) => setFiltroPerfil(e.target.value)}
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+        >
+          <option value="">Todos os perfis</option>
+          {perfis.map((pf) => (
+            <option key={pf.id} value={pf.id}>{pf.nome}</option>
+          ))}
+        </select>
+
         {carregando ? (
           <p className="py-12 text-center text-sm text-muted-foreground">Carregando...</p>
-        ) : produtos.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
+        ) : filtrados.length === 0 ? (
+          <p className="py-12 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
         ) : (
           <ul className="space-y-2">
-            {produtos.map((p) => (
+            {filtrados.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3"
+                className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3"
               >
-                <div className="min-w-0 flex-1 pr-3">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">
                     {p.nome}
                     {!p.ativo && (
-                      <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">
-                        (inativo)
-                      </span>
+                      <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Unidade: {p.unidade}
-                    {p.perfil_id && (
-                      <> · Perfil: {perfis.find((pf) => pf.id === p.perfil_id)?.nome ?? "?"}</>
-                    )}
+                  <p className="truncate text-xs text-muted-foreground">
+                    {p.unidade}
+                    {p.grupo && ` · ${p.grupo}${p.subgrupo ? "/" + p.subgrupo : ""}`}
+                  </p>
+                  <p className="truncate text-[10px] uppercase text-muted-foreground">
+                    {[p.setor, p.local, perfis.find((pf) => pf.id === p.perfil_id)?.nome].filter(Boolean).join(" · ")}
+                    {p.valor_unitario != null && ` · R$ ${p.valor_unitario.toFixed(2)}`}
                   </p>
                 </div>
                 <div className="flex gap-1">
@@ -174,7 +248,7 @@ function AdminProdutos() {
 
       {(novo || editando) && (
         <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center">
-          <div className="w-full max-w-md rounded-t-2xl border border-border bg-card p-6 sm:rounded-2xl">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-card p-6 sm:rounded-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-bold text-foreground">
                 {editando ? "Editar produto" : "Novo produto"}
@@ -184,37 +258,80 @@ function AdminProdutos() {
               </button>
             </div>
             <div className="space-y-3">
-              <label className="block text-xs uppercase tracking-wider text-muted-foreground">
-                Nome
+              <Field label="Nome">
                 <input
                   value={form.nome}
                   onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  className={inputCls}
                 />
-              </label>
-              <label className="block text-xs uppercase tracking-wider text-muted-foreground">
-                Unidade
-                <input
-                  value={form.unidade}
-                  onChange={(e) => setForm((f) => ({ ...f, unidade: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-                />
-              </label>
-              <label className="block text-xs uppercase tracking-wider text-muted-foreground">
-                Perfil
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Unidade">
+                  <select
+                    value={form.unidade}
+                    onChange={(e) => setForm((f) => ({ ...f, unidade: e.target.value }))}
+                    className={inputCls}
+                  >
+                    {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </Field>
+                <Field label="Valor unit. (R$)">
+                  <input
+                    inputMode="decimal"
+                    value={form.valor_unitario}
+                    onChange={(e) => setForm((f) => ({ ...f, valor_unitario: e.target.value }))}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+              <Field label="Perfil (líder responsável)">
                 <select
                   value={form.perfil_id}
                   onChange={(e) => setForm((f) => ({ ...f, perfil_id: e.target.value }))}
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  className={inputCls}
                 >
                   <option value="">— Sem perfil —</option>
-                  {perfis.map((pf) => (
-                    <option key={pf.id} value={pf.id}>
-                      {pf.nome}
-                    </option>
-                  ))}
+                  {perfis.map((pf) => <option key={pf.id} value={pf.id}>{pf.nome}</option>)}
                 </select>
-              </label>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Setor">
+                  <select
+                    value={form.setor}
+                    onChange={(e) => setForm((f) => ({ ...f, setor: e.target.value }))}
+                    className={inputCls}
+                  >
+                    <option value="">—</option>
+                    {SETORES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </Field>
+                <Field label="Local">
+                  <select
+                    value={form.local}
+                    onChange={(e) => setForm((f) => ({ ...f, local: e.target.value }))}
+                    className={inputCls}
+                  >
+                    <option value="">—</option>
+                    {LOCAIS.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Grupo">
+                  <input
+                    value={form.grupo}
+                    onChange={(e) => setForm((f) => ({ ...f, grupo: e.target.value }))}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Subgrupo">
+                  <input
+                    value={form.subgrupo}
+                    onChange={(e) => setForm((f) => ({ ...f, subgrupo: e.target.value }))}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
               <label className="flex items-center gap-2 text-sm text-foreground">
                 <input
                   type="checkbox"
@@ -234,5 +351,17 @@ function AdminProdutos() {
         </div>
       )}
     </main>
+  );
+}
+
+const inputCls =
+  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block text-xs uppercase tracking-wider text-muted-foreground">
+      {label}
+      {children}
+    </label>
   );
 }
