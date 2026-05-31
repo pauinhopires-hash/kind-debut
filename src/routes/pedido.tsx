@@ -114,10 +114,40 @@ function PedidoPage() {
     const q = busca.trim().toLowerCase();
     return produtos.filter((p) => {
       if (perfilFiltro && p.perfil_id !== perfilFiltro) return false;
+      if (grupoFiltro && (p.grupo ?? "Outros") !== grupoFiltro) return false;
       if (q && !p.nome.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [produtos, busca, perfilFiltro]);
+  }, [produtos, busca, perfilFiltro, grupoFiltro]);
+
+  const gruposDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => {
+      if (perfilFiltro && p.perfil_id !== perfilFiltro) return;
+      set.add(p.grupo ?? "Outros");
+    });
+    return Array.from(set).sort();
+  }, [produtos, perfilFiltro]);
+
+  const produtosAgrupados = useMemo(() => {
+    const map = new Map<string, Map<string, Produto[]>>();
+    produtosFiltrados.forEach((p) => {
+      const g = p.grupo ?? "Outros";
+      const sg = p.subgrupo ?? "—";
+      if (!map.has(g)) map.set(g, new Map());
+      const sub = map.get(g)!;
+      if (!sub.has(sg)) sub.set(sg, []);
+      sub.get(sg)!.push(p);
+    });
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([grupo, subs]) => ({
+        grupo,
+        subgrupos: Array.from(subs.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([subgrupo, itens]) => ({ subgrupo, itens })),
+      }));
+  }, [produtosFiltrados]);
 
   const handleSalvar = async () => {
     if (!user || !usuario || itensSelecionados.length === 0) return;
