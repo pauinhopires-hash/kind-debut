@@ -20,6 +20,8 @@ type Produto = {
   nome: string;
   unidade: string;
   perfil_id: string | null;
+  grupo: string | null;
+  subgrupo: string | null;
 };
 type Perfil = { id: string; nome: string };
 
