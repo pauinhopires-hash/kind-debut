@@ -37,6 +37,7 @@ function PedidoPage() {
   const [salvando, setSalvando] = useState(false);
   const [busca, setBusca] = useState("");
   const [perfilFiltro, setPerfilFiltro] = useState<string>("");
+  const [grupoFiltro, setGrupoFiltro] = useState<string>("");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
