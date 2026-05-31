@@ -50,7 +50,7 @@ function PedidoPage() {
       const [{ data: prods, error: e1 }, { data: est }, { data: pfs }] = await Promise.all([
         supabase
           .from("produtos")
-          .select("id, nome, unidade, perfil_id")
+          .select("id, nome, unidade, perfil_id, grupo, subgrupo")
           .eq("ativo", true)
           .order("nome"),
         supabase.from("estoque_atual").select("produto_id, quantidade"),
