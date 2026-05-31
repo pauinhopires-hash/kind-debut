@@ -257,8 +257,36 @@ function PedidoPage() {
           placeholder="Buscar produto..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="mb-4 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary"
+          className="mb-3 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary"
         />
+
+        {gruposDisponiveis.length > 1 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setGrupoFiltro("")}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                grupoFiltro === ""
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground hover:border-primary"
+              }`}
+            >
+              Todos
+            </button>
+            {gruposDisponiveis.map((g) => (
+              <button
+                key={g}
+                onClick={() => setGrupoFiltro(g)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                  grupoFiltro === g
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary"
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
 
         {carregando ? (
           <p className="py-12 text-center text-sm text-muted-foreground">Carregando produtos...</p>
@@ -269,65 +297,91 @@ function PedidoPage() {
         ) : produtosFiltrados.length === 0 ? (
           <p className="py-12 text-center text-sm text-muted-foreground">Nada encontrado.</p>
         ) : (
-          <ul className="space-y-2">
-            {produtosFiltrados.map((p) => {
-              const qtd = quantidades[p.id] ?? 0;
-              const ativo = qtd > 0;
-              const est = estoque[p.id];
-              return (
-                <li
-                  key={p.id}
-                  className={`flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition ${
-                    ativo ? "border-primary/60" : "border-border"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1 pr-3">
-                    <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Unid.: {p.unidade}
-                      {est !== undefined && (
-                        <>
-                          {" · "}
-                          <span className={est <= 0 ? "text-destructive" : "text-foreground/70"}>
-                            Estoque: {est}
-                          </span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setQtd(p.id, Math.max(0, qtd - 1))}
-                      disabled={qtd === 0}
-                      className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition hover:border-primary disabled:opacity-40"
-                      aria-label="Diminuir"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      value={qtd === 0 ? "" : qtd}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        setQtd(p.id, Number.isFinite(v) && v > 0 ? v : 0);
-                      }}
-                      placeholder="0"
-                      className="h-9 w-14 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
-                    />
-                    <button
-                      onClick={() => setQtd(p.id, qtd + 1)}
-                      className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground transition hover:opacity-90"
-                      aria-label="Aumentar"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="space-y-6">
+            {produtosAgrupados.map(({ grupo, subgrupos }) => (
+              <section key={grupo}>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
+                  {grupo}
+                </h2>
+                <div className="space-y-4">
+                  {subgrupos.map(({ subgrupo, itens }) => (
+                    <div key={subgrupo}>
+                      {subgrupos.length > 1 || subgrupo !== "—" ? (
+                        <p className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+                          {subgrupo}
+                        </p>
+                      ) : null}
+                      <ul className="space-y-2">
+                        {itens.map((p) => {
+                          const qtd = quantidades[p.id] ?? 0;
+                          const ativo = qtd > 0;
+                          const est = estoque[p.id];
+                          return (
+                            <li
+                              key={p.id}
+                              className={`flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition ${
+                                ativo ? "border-primary/60" : "border-border"
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1 pr-3">
+                                <p className="truncate text-sm font-semibold text-foreground">
+                                  {p.nome}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Unid.: {p.unidade}
+                                  {est !== undefined && (
+                                    <>
+                                      {" · "}
+                                      <span
+                                        className={
+                                          est <= 0 ? "text-destructive" : "text-foreground/70"
+                                        }
+                                      >
+                                        Estoque: {est}
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setQtd(p.id, Math.max(0, qtd - 1))}
+                                  disabled={qtd === 0}
+                                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition hover:border-primary disabled:opacity-40"
+                                  aria-label="Diminuir"
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  min={0}
+                                  value={qtd === 0 ? "" : qtd}
+                                  onChange={(e) => {
+                                    const v = Number(e.target.value);
+                                    setQtd(p.id, Number.isFinite(v) && v > 0 ? v : 0);
+                                  }}
+                                  placeholder="0"
+                                  className="h-9 w-14 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
+                                />
+                                <button
+                                  onClick={() => setQtd(p.id, qtd + 1)}
+                                  className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground transition hover:opacity-90"
+                                  aria-label="Aumentar"
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
 
         {itensSelecionados.length > 0 && (
