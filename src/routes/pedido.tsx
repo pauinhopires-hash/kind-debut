@@ -19,18 +19,22 @@ type Produto = {
   id: string;
   nome: string;
   unidade: string;
+  perfil_id: string | null;
 };
+type Perfil = { id: string; nome: string };
 
 function PedidoPage() {
   const navigate = useNavigate();
-  const { user, usuario, loading } = useAuth();
+  const { user, usuario, isAdmin, loading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [estoque, setEstoque] = useState<Record<string, number>>({});
   const [carregando, setCarregando] = useState(true);
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [busca, setBusca] = useState("");
+  const [perfilFiltro, setPerfilFiltro] = useState<string>("");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -40,12 +44,18 @@ function PedidoPage() {
     if (!user) return;
     (async () => {
       setCarregando(true);
-      const [{ data: prods, error: e1 }, { data: est }] = await Promise.all([
-        supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
+      const [{ data: prods, error: e1 }, { data: est }, { data: pfs }] = await Promise.all([
+        supabase
+          .from("produtos")
+          .select("id, nome, unidade, perfil_id")
+          .eq("ativo", true)
+          .order("nome"),
         supabase.from("estoque_atual").select("produto_id, quantidade"),
+        supabase.from("perfis").select("id, nome").order("nome"),
       ]);
       if (e1) toast.error("Erro ao carregar produtos", { description: e1.message });
       setProdutos((prods ?? []) as Produto[]);
+      setPerfis((pfs ?? []) as Perfil[]);
       const map: Record<string, number> = {};
       (est ?? []).forEach((r: { produto_id: string; quantidade: number }) => {
         map[r.produto_id] = Number(r.quantidade);
@@ -99,19 +109,34 @@ function PedidoPage() {
 
   const produtosFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    if (!q) return produtos;
-    return produtos.filter((p) => p.nome.toLowerCase().includes(q));
-  }, [produtos, busca]);
+    return produtos.filter((p) => {
+      if (perfilFiltro && p.perfil_id !== perfilFiltro) return false;
+      if (q && !p.nome.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [produtos, busca, perfilFiltro]);
 
   const handleSalvar = async () => {
     if (!user || !usuario || itensSelecionados.length === 0) return;
+
+    // Determina perfil_id da requisição: admin → escolhido no filtro ou perfil do 1º produto
+    let perfilDaReq: string | null = usuario.perfil_id;
+    if (isAdmin) {
+      if (perfilFiltro) {
+        perfilDaReq = perfilFiltro;
+      } else {
+        const primeiro = produtos.find((p) => p.id === itensSelecionados[0][0]);
+        perfilDaReq = primeiro?.perfil_id ?? null;
+      }
+    }
+
     setSalvando(true);
 
     const { data: req, error: e1 } = await supabase
       .from("requisicoes")
       .insert({
         usuario_id: user.id,
-        perfil_id: usuario.perfil_id,
+        perfil_id: perfilDaReq,
         observacao: observacao.trim() || null,
         status: "pendente",
       })
@@ -174,6 +199,26 @@ function PedidoPage() {
       </header>
 
       <div className="mx-auto max-w-md px-6 pt-4">
+        {isAdmin && (
+          <div className="mb-3">
+            <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
+              Setor / Perfil (master)
+            </label>
+            <select
+              value={perfilFiltro}
+              onChange={(e) => setPerfilFiltro(e.target.value)}
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+            >
+              <option value="">Todos os setores</option>
+              {perfis.map((pf) => (
+                <option key={pf.id} value={pf.id}>
+                  {pf.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <input
           type="search"
           placeholder="Buscar produto..."
