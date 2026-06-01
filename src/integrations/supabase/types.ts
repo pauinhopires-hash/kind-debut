@@ -128,6 +128,8 @@ export type Database = {
       }
       requisicao_itens: {
         Row: {
+          comprado: boolean
+          comprado_em: string | null
           created_at: string
           id: string
           produto_id: string
@@ -135,6 +137,8 @@ export type Database = {
           requisicao_id: string
         }
         Insert: {
+          comprado?: boolean
+          comprado_em?: string | null
           created_at?: string
           id?: string
           produto_id: string
@@ -142,6 +146,8 @@ export type Database = {
           requisicao_id: string
         }
         Update: {
+          comprado?: boolean
+          comprado_em?: string | null
           created_at?: string
           id?: string
           produto_id?: string

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Boxes, Package, Users, ClipboardList } from "lucide-react";
+import { ArrowLeft, Boxes, Package, Users, ClipboardList, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/")({
@@ -35,6 +35,7 @@ function AdminHub() {
   }, []);
 
   const cards = [
+    { to: "/admin/lista-compras", icon: ShoppingCart, titulo: "Lista de compras", desc: "Consolidado do dia para comprar" },
     { to: "/admin/requisicoes", icon: ClipboardList, titulo: "Requisições", desc: "Aprovar ou cancelar pedidos" },
     { to: "/admin/produtos", icon: Package, titulo: "Produtos", desc: "Cadastrar e editar itens" },
     { to: "/admin/estoque", icon: Boxes, titulo: "Estoque", desc: "Ajustar quantidades" },
