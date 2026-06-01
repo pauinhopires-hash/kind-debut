@@ -1,44 +1,28 @@
-## Plano: Importar produtos da planilha
+## Objetivo
+Permitir que novos usuários se cadastrem e entrem imediatamente, sem precisar confirmar email e sem precisar de aprovação do admin.
 
-### 1. Migração de banco
-Adicionar à tabela `produtos`:
-- `grupo` (text) — ex: Alimentos, Bebidas, Consumo
-- `subgrupo` (text) — ex: Mercearia, Congelados
-- `local` (text) — CONGELADOR | GELADEIRA | PRATELEIRA | ESTOQUE CENTRAL
-- `setor` (text) — COZINHA | ESTOQUE CENTRAL | FRENTE
-- `valor_unitario` (numeric, nullable)
+## Mudanças
 
-### 2. Criar 4 perfis
-- Lider Cozinha
-- Lider Salão
-- Frente de Caixa
-- Copa Cozinha
+**1. Auto-confirmação de email (Supabase Auth)**
+- Ativar `auto_confirm_email = true` no Supabase Auth.
+- Resultado: ao se cadastrar via `/login`, o usuário entra direto, sem precisar clicar em link de confirmação.
 
-### 3. Inserir 399 produtos
-Para cada linha:
-- `nome` = PRODUTO
-- `unidade` = UNIDADE DE MEDIDA (UND, KG, CX, PC, PCT, LT)
-- `grupo`, `subgrupo`, `setor`, `valor_unitario` = colunas correspondentes
-- `local` = última palavra de "Mapa de Líder" (CONGELADOR/GELADEIRA/PRATELEIRA/ESTOQUE CENTRAL)
-- `perfil_id` = perfil cujo nome aparece no início de "Mapa de Líder"
-- `ativo` = true
+**2. Cadastro público continua aberto**
+- Manter `disable_signup = false` (qualquer um pode se cadastrar).
+- Manter o trigger `handle_new_user` que cria registro em `public.usuarios` com `ativo = true`.
+- Manter o trigger `grant_first_admin` (1º usuário vira admin, demais viram `usuario`).
 
-### 4. Estoque inicial zerado
-`INSERT INTO estoque_atual (produto_id, quantidade) SELECT id, 0 FROM produtos;`
+**3. Sem aprovação do admin**
+- Não exigir que o admin ative o usuário.
+- Novo usuário já entra com `ativo = true` (comportamento atual).
 
-### 5. Atualizar UI de admin
-- `/admin/produtos` (cadastro/edição): adicionar campos grupo, subgrupo, setor, local, valor unitário no formulário e listar grupo/local no card.
-- `/admin/estoque`: já deve funcionar; opcionalmente mostrar local/grupo na linha.
-- Tela inicial de pedido (`/pedido`): manter filtragem por perfil já existente; opcionalmente agrupar produtos por subgrupo na listagem (fora do escopo se você não quiser).
+## O que NÃO muda
+- O admin **ainda precisa atribuir um perfil** (Líder Cozinha, Líder Salão, Frente de Caixa, Copa Cozinha) em `/admin/usuarios` para o usuário ver produtos em `/pedido`. Isso é uma regra de negócio (cada perfil vê apenas seus produtos via RLS), não autenticação.
+- Quem é admin (Paulo) continua vendo tudo.
 
-### Detalhes técnicos
-- Migração SQL: `ALTER TABLE produtos ADD COLUMN ...` (campos nullable para não quebrar dados existentes).
-- Inserção em lote via tool `supabase--insert` com um único INSERT de 399 linhas usando `VALUES (...), (...), ...` e subqueries para resolver `perfil_id` por nome.
-- Sem alteração nas RLS policies (continuam por `perfil_id`).
+## Observação de segurança
+Com auto-confirm ativo, qualquer pessoa com um email válido (mesmo inexistente) consegue criar conta e logar. Se quiser restringir, posso adicionar depois: domínio de email permitido, ou voltar para "exige confirmação por email".
 
-### Pendências/observações
-- 14 produtos estão sem valor unitário na planilha — entrarão como `NULL`.
-- Linhas como "ARROZ - 1 KILO - EQUIPE" ficam no perfil "Lider Cozinha" mesmo sendo "alimentação de funcionários" (o mapa de líder define isso).
-- Após importar você poderá editar/desativar individualmente em `/admin/produtos`.
-
-Confirma para executar?
+## Ação técnica
+- Chamar `configure_auth` com `auto_confirm_email: true`, `disable_signup: false`, `external_anonymous_users_enabled: false`, `password_hibp_enabled: true`.
+- Nenhuma mudança de código/migration necessária.
