@@ -41,9 +41,6 @@ type LinhaConsolidada = {
   setores: Set<string>;
 };
 
-function toLocalDate(iso: string) {
-  return new Date(iso).toISOString().slice(0, 10);
-}
 
 function ListaComprasPage() {
   const navigate = useNavigate();
