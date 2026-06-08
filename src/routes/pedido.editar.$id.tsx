@@ -33,7 +33,12 @@ function EditarPedido() {
     (async () => {
       setCarregando(true);
       const [{ data: req }, { data: itens }, { data: prods }] = await Promise.all([
-        supabase.from("requisicoes").select("id, status, observacao").eq("id", id).maybeSingle(),
+        supabase
+          .from("requisicoes")
+          .select("id, status, observacao")
+          .eq("id", id)
+          .eq("usuario_id", user.id)
+          .maybeSingle(),
         supabase.from("requisicao_itens").select("produto_id, quantidade").eq("requisicao_id", id),
         supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
       ]);
