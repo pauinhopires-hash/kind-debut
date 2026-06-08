@@ -1,440 +1,398 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Copy, Check, RefreshCw } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { ArrowLeft, Check, Copy, CheckCheck, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/admin/lista-compras")({
-  head: () => ({
-    meta: [
-      { title: "Lista de compras — Admin" },
-      { name: "description", content: "Lista consolidada de compras do dia." },
-    ],
-  }),
-  component: ListaComprasPage,
+  component: AdminListaCompras,
 });
 
-type Produto = {
-  id: string;
+type ItemLista = {
+  produto_id: string;
   nome: string;
   unidade: string;
-  grupo: string | null;
-  perfil_id: string | null;
-};
-type Perfil = { id: string; nome: string };
-type ItemRow = {
-  id: string;
-  produto_id: string;
-  quantidade: number;
+  grupo: string;
+  pedido: number; // soma das requisições
+  estoque: number; // estoque atual
+  aComprar: number; // admin pode ajustar
   comprado: boolean;
-  requisicao_id: string;
-  requisicoes: { perfil_id: string | null; usuario_id: string } | null;
+  comprado_em: string | null;
+  item_ids: string[]; // ids dos requisicao_itens relacionados
 };
 
-type LinhaConsolidada = {
-  produto: Produto;
-  pedido: number;
-  estoque: number;
-  aComprar: number;
-  itemIds: string[];
-  todosComprados: boolean;
-  setores: Set<string>;
-};
+type Grupo = { nome: string; itens: ItemLista[] };
 
-
-function ListaComprasPage() {
+function AdminListaCompras() {
   const navigate = useNavigate();
-  const hoje = new Date().toISOString().slice(0, 10);
-  const [data, setData] = useState(hoje);
-  const [perfilFiltro, setPerfilFiltro] = useState("");
+  const [data, setData] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [setor, setSetor] = useState("todos");
   const [busca, setBusca] = useState("");
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [perfis, setPerfis] = useState<Perfil[]>([]);
-  const [produtos, setProdutos] = useState<Record<string, Produto>>({});
-  const [estoque, setEstoque] = useState<Record<string, number>>({});
-  const [itens, setItens] = useState<ItemRow[]>([]);
-  const [ajustes, setAjustes] = useState<Record<string, number>>({});
+  const [salvando, setSalvando] = useState<string | null>(null);
+  const [fechando, setFechando] = useState(false);
 
-  const carregar = async () => {
+  const carregar = useCallback(async () => {
     setCarregando(true);
-    const inicio = new Date(`${data}T00:00:00`).toISOString();
-    const fim = new Date(`${data}T23:59:59.999`).toISOString();
-
-    const [{ data: reqs }, { data: pfs }, { data: prods }, { data: est }] = await Promise.all([
-      supabase
-        .from("requisicoes")
-        .select("id, perfil_id, usuario_id, created_at, status")
-        .gte("created_at", inicio)
-        .lte("created_at", fim)
-        .in("status", ["pendente", "comprada"]),
-      supabase.from("perfis").select("id, nome").order("nome"),
-      supabase.from("produtos").select("id, nome, unidade, grupo, perfil_id"),
-      supabase.from("estoque_atual").select("produto_id, quantidade"),
-    ]);
-
-    const reqIds = (reqs ?? []).map((r) => r.id);
-    let itensData: ItemRow[] = [];
-    if (reqIds.length > 0) {
-      const { data: its, error } = await supabase
+    try {
+      // Carrega requisições do dia com itens
+      let query = supabase
         .from("requisicao_itens")
-        .select("id, produto_id, quantidade, comprado, requisicao_id, requisicoes!inner(perfil_id, usuario_id)")
-        .in("requisicao_id", reqIds);
-      if (error) toast.error("Erro ao carregar itens", { description: error.message });
-      itensData = (its ?? []) as unknown as ItemRow[];
-    }
+        .select(
+          `
+          id,
+          quantidade,
+          comprado,
+          comprado_em,
+          produto_id,
+          produtos (id, nome, unidade, grupo),
+          requisicoes!inner (id, status, data_pedido, setor)
+        `,
+        )
+        .eq("requisicoes.status", "pendente")
+        .gte("requisicoes.data_pedido", `${data}T00:00:00`)
+        .lte("requisicoes.data_pedido", `${data}T23:59:59`);
 
-    setPerfis((pfs ?? []) as Perfil[]);
-    const prodMap: Record<string, Produto> = {};
-    (prods ?? []).forEach((p) => {
-      prodMap[p.id] = p as Produto;
-    });
-    setProdutos(prodMap);
-    const estMap: Record<string, number> = {};
-    (est ?? []).forEach((r: { produto_id: string; quantidade: number }) => {
-      estMap[r.produto_id] = Number(r.quantidade);
-    });
-    setEstoque(estMap);
-    setItens(itensData);
-    setAjustes({});
-    setCarregando(false);
-  };
+      if (setor !== "todos") {
+        query = query.eq("requisicoes.setor", setor);
+      }
+
+      const { data: itens, error: e1 } = await query;
+      const { data: estoqueRows, error: e2 } = await supabase.from("estoque_atual").select("produto_id, quantidade");
+
+      if (e1 || e2) {
+        toast.error("Erro ao carregar", { description: (e1 ?? e2)?.message });
+        setCarregando(false);
+        return;
+      }
+
+      const mapEstoque: Record<string, number> = {};
+      (estoqueRows ?? []).forEach((r) => {
+        mapEstoque[r.produto_id] = Number(r.quantidade);
+      });
+
+      // Agrupa por produto
+      const mapProduto: Record<string, ItemLista> = {};
+      for (const item of itens ?? []) {
+        const prod = item.produtos as {
+          id: string;
+          nome: string;
+          unidade: string;
+          grupo: string;
+        } | null;
+        if (!prod) continue;
+        const pid = prod.id;
+        if (!mapProduto[pid]) {
+          const est = mapEstoque[pid] ?? 0;
+          mapProduto[pid] = {
+            produto_id: pid,
+            nome: prod.nome,
+            unidade: prod.unidade,
+            grupo: prod.grupo ?? "Outros",
+            pedido: 0,
+            estoque: est,
+            aComprar: 0,
+            comprado: false,
+            comprado_em: null,
+            item_ids: [],
+          };
+        }
+        mapProduto[pid].pedido += Number(item.quantidade);
+        mapProduto[pid].item_ids.push(item.id);
+        if (item.comprado) {
+          mapProduto[pid].comprado = true;
+          mapProduto[pid].comprado_em = item.comprado_em;
+        }
+      }
+
+      // Calcula aComprar (pedido - estoque, mínimo 0)
+      for (const it of Object.values(mapProduto)) {
+        it.aComprar = Math.max(0, it.pedido - it.estoque);
+      }
+
+      // Agrupa por grupo
+      const gruposMap: Record<string, ItemLista[]> = {};
+      for (const it of Object.values(mapProduto)) {
+        const g = it.grupo || "Outros";
+        if (!gruposMap[g]) gruposMap[g] = [];
+        gruposMap[g].push(it);
+      }
+
+      const gruposArr: Grupo[] = Object.entries(gruposMap)
+        .map(([nome, itens]) => ({
+          nome,
+          itens: itens.sort((a, b) => a.nome.localeCompare(b.nome)),
+        }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+      setGrupos(gruposArr);
+    } finally {
+      setCarregando(false);
+    }
+  }, [data, setor]);
 
   useEffect(() => {
     carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [carregar]);
 
-  const linhas: LinhaConsolidada[] = useMemo(() => {
-    const map = new Map<string, LinhaConsolidada>();
-    const q = busca.trim().toLowerCase();
-    itens.forEach((it) => {
-      if (perfilFiltro && it.requisicoes?.perfil_id !== perfilFiltro) return;
-      const prod = produtos[it.produto_id];
-      if (!prod) return;
-      if (q && !prod.nome.toLowerCase().includes(q)) return;
-      let linha = map.get(it.produto_id);
-      if (!linha) {
-        const est = estoque[it.produto_id] ?? 0;
-        linha = {
-          produto: prod,
-          pedido: 0,
-          estoque: est,
-          aComprar: 0,
-          itemIds: [],
-          todosComprados: true,
-          setores: new Set(),
-        };
-        map.set(it.produto_id, linha);
+  const setAComprar = (pid: string, v: number) => {
+    setGrupos((gs) =>
+      gs.map((g) => ({
+        ...g,
+        itens: g.itens.map((it) => (it.produto_id === pid ? { ...it, aComprar: v } : it)),
+      })),
+    );
+  };
+
+  const marcarComprado = async (it: ItemLista) => {
+    setSalvando(it.produto_id);
+    const agora = new Date().toISOString();
+    const novoComprado = !it.comprado;
+
+    try {
+      // 1. Atualiza requisicao_itens
+      const { error: e1 } = await supabase
+        .from("requisicao_itens")
+        .update({ comprado: novoComprado, comprado_em: novoComprado ? agora : null })
+        .in("id", it.item_ids);
+
+      if (e1) throw e1;
+
+      // 2. BAIXA AUTOMÁTICA DO ESTOQUE
+      //    Ao marcar como comprado, SOMA aComprar ao estoque_atual
+      if (novoComprado && it.aComprar > 0) {
+        const novaQtd = it.estoque + it.aComprar;
+        const { error: e2 } = await supabase
+          .from("estoque_atual")
+          .upsert({ produto_id: it.produto_id, quantidade: novaQtd });
+        if (e2) throw e2;
+      } else if (!novoComprado) {
+        // Desfaz: remove a quantidade que tinha sido somada
+        const novaQtd = Math.max(0, it.estoque - it.aComprar);
+        const { error: e3 } = await supabase
+          .from("estoque_atual")
+          .upsert({ produto_id: it.produto_id, quantidade: novaQtd });
+        if (e3) throw e3;
       }
-      linha.pedido += Number(it.quantidade);
-      linha.itemIds.push(it.id);
-      if (!it.comprado) linha.todosComprados = false;
-      if (it.requisicoes?.perfil_id) linha.setores.add(it.requisicoes.perfil_id);
-    });
-    map.forEach((l) => {
-      const sugestao = Math.max(0, l.pedido - l.estoque);
-      l.aComprar = ajustes[l.produto.id] ?? sugestao;
-    });
-    return Array.from(map.values()).sort((a, b) =>
-      (a.produto.grupo ?? "zz").localeCompare(b.produto.grupo ?? "zz") ||
-      a.produto.nome.localeCompare(b.produto.nome)
-    );
-  }, [itens, produtos, estoque, ajustes, perfilFiltro, busca]);
 
-  const porGrupo = useMemo(() => {
-    const m = new Map<string, LinhaConsolidada[]>();
-    linhas.forEach((l) => {
-      const g = l.produto.grupo ?? "Outros";
-      if (!m.has(g)) m.set(g, []);
-      m.get(g)!.push(l);
-    });
-    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [linhas]);
-
-  const setAjuste = (id: string, v: number) =>
-    setAjustes((a) => ({ ...a, [id]: Math.max(0, v) }));
-
-  const marcarComprado = async (linha: LinhaConsolidada, comprado: boolean) => {
-    const { error } = await supabase
-      .from("requisicao_itens")
-      .update({ comprado, comprado_em: comprado ? new Date().toISOString() : null })
-      .in("id", linha.itemIds);
-    if (error) {
-      toast.error("Erro ao atualizar", { description: error.message });
-      return;
+      toast.success(novoComprado ? `${it.nome} marcado como comprado` : `${it.nome} desmarcado`);
+      await carregar();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao salvar", { description: msg });
+    } finally {
+      setSalvando(null);
     }
-    setItens((prev) =>
-      prev.map((it) =>
-        linha.itemIds.includes(it.id) ? { ...it, comprado } : it
-      )
-    );
   };
 
   const fecharDia = async () => {
-    const reqIds = Array.from(new Set(itens.map((i) => i.requisicao_id)));
-    if (reqIds.length === 0) return;
-    const ok = window.confirm(
-      `Marcar todos os ${linhas.length} itens como comprados e fechar ${reqIds.length} requisição(ões) do dia?`
-    );
-    if (!ok) return;
-    const todosIds = itens.map((i) => i.id);
-    const [{ error: e1 }, { error: e2 }] = await Promise.all([
-      supabase
-        .from("requisicao_itens")
-        .update({ comprado: true, comprado_em: new Date().toISOString() })
-        .in("id", todosIds),
-      supabase.from("requisicoes").update({ status: "comprada" }).in("id", reqIds),
-    ]);
-    if (e1 || e2) {
-      toast.error("Erro ao fechar dia", { description: (e1 ?? e2)?.message });
-      return;
+    setFechando(true);
+    try {
+      // Busca as requisições pendentes do dia
+      const { data: reqs, error } = await supabase
+        .from("requisicoes")
+        .select("id")
+        .eq("status", "pendente")
+        .gte("data_pedido", `${data}T00:00:00`)
+        .lte("data_pedido", `${data}T23:59:59`);
+
+      if (error) throw error;
+      const ids = (reqs ?? []).map((r) => r.id);
+      if (ids.length === 0) {
+        toast.info("Nenhuma requisição pendente para fechar.");
+        return;
+      }
+
+      const { error: e2 } = await supabase.from("requisicoes").update({ status: "comprada" }).in("id", ids);
+
+      if (e2) throw e2;
+      toast.success(`${ids.length} requisição(ões) fechadas como "comprada"`);
+      await carregar();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao fechar dia", { description: msg });
+    } finally {
+      setFechando(false);
     }
-    toast.success("Lista fechada");
-    carregar();
   };
 
-  const gerarTextoWhats = () => {
-    const dataFmt = new Date(`${data}T12:00:00`).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-    });
-    const linhasParaComprar = linhas.filter((l) => l.aComprar > 0 && !l.todosComprados);
-    if (linhasParaComprar.length === 0) {
-      toast.info("Nada a comprar nesta lista");
-      return;
+  const copiarWhatsApp = () => {
+    const dataFmt = format(new Date(data + "T12:00:00"), "dd/MM", { locale: ptBR });
+    const linhas: string[] = [`🛒 Lista de compras — ${dataFmt}`, ""];
+
+    for (const g of grupos) {
+      const itensNaoComprados = g.itens.filter((it) => !it.comprado && it.aComprar > 0);
+      if (itensNaoComprados.length === 0) continue;
+      linhas.push(`*${g.nome.toUpperCase()}*`);
+      for (const it of itensNaoComprados) {
+        linhas.push(`• ${it.nome} — ${it.aComprar} ${it.unidade}`);
+      }
+      linhas.push("");
     }
-    let txt = `🛒 *Lista de compras — ${dataFmt}*\n`;
-    const grupos = new Map<string, LinhaConsolidada[]>();
-    linhasParaComprar.forEach((l) => {
-      const g = (l.produto.grupo ?? "Outros").toUpperCase();
-      if (!grupos.has(g)) grupos.set(g, []);
-      grupos.get(g)!.push(l);
-    });
-    Array.from(grupos.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([g, items]) => {
-        txt += `\n*${g}*\n`;
-        items.forEach((l) => {
-          txt += `• ${l.produto.nome} — ${l.aComprar} ${l.produto.unidade}\n`;
-        });
-      });
+
     navigator.clipboard
-      .writeText(txt.trim())
-      .then(() => toast.success("Lista copiada para a área de transferência"))
+      .writeText(linhas.join("\n").trim())
+      .then(() => toast.success("Copiado para o clipboard!"))
       .catch(() => toast.error("Não foi possível copiar"));
   };
 
-  const totalAComprar = linhas.reduce((s, l) => s + (l.todosComprados ? 0 : l.aComprar), 0);
-  const totalItens = linhas.length;
-  const totalComprados = linhas.filter((l) => l.todosComprados).length;
+  // Filtro de busca (aplicado sobre grupos)
+  const gruposFiltrados = busca
+    ? grupos
+        .map((g) => ({
+          ...g,
+          itens: g.itens.filter((it) => it.nome.toLowerCase().includes(busca.toLowerCase())),
+        }))
+        .filter((g) => g.itens.length > 0)
+    : grupos;
+
+  const totalItens = grupos.reduce((acc, g) => acc + g.itens.length, 0);
+  const comprados = grupos.reduce((acc, g) => acc + g.itens.filter((i) => i.comprado).length, 0);
 
   return (
-    <main className="min-h-screen bg-background pb-32">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <button
-            onClick={() => navigate({ to: "/admin" })}
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
-            aria-label="Voltar"
-          >
-            <ArrowLeft size={18} />
+    <div className="min-h-screen bg-[#0d0d0d] text-white p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <button onClick={() => navigate({ to: "/admin" })}>
+            <ArrowLeft className="w-5 h-5 text-gray-400" />
           </button>
-          <div className="flex-1">
-            <p className="text-xs uppercase tracking-widest text-primary">Admin</p>
-            <h1 className="text-lg font-bold text-foreground">Lista de compras</h1>
-          </div>
-          <button
-            onClick={carregar}
-            className="rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:border-primary hover:text-foreground"
-            aria-label="Recarregar"
-          >
-            <RefreshCw size={16} />
-          </button>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-3xl px-6 pt-4">
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-xl border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Itens</p>
-            <p className="text-xl font-black tabular-nums text-foreground">{totalItens}</p>
-          </div>
-          <div className="rounded-xl border border-primary/60 bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">A comprar</p>
-            <p className="text-xl font-black tabular-nums text-primary">{totalAComprar}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Comprados</p>
-            <p className="text-xl font-black tabular-nums text-foreground">{totalComprados}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pendentes</p>
-            <p className="text-xl font-black tabular-nums text-foreground">{totalItens - totalComprados}</p>
-          </div>
+          <h1 className="text-xl font-bold flex-1">Lista de compras</h1>
+          <span className="text-xs text-gray-400">
+            {comprados}/{totalItens} comprados
+          </span>
         </div>
 
-        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
-              Data
-            </label>
-            <input
-              type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value)}
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
-              Setor
-            </label>
-            <select
-              value={perfilFiltro}
-              onChange={(e) => setPerfilFiltro(e.target.value)}
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-            >
-              <option value="">Todos</option>
-              {perfis.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
-              Buscar
-            </label>
-            <input
-              type="search"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Nome do produto"
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-            />
-          </div>
+        {/* Filtros */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <input
+            type="date"
+            value={data}
+            onChange={(e) => setData(e.target.value)}
+            className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
+          />
+          <select
+            value={setor}
+            onChange={(e) => setSetor(e.target.value)}
+            className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
+          >
+            <option value="todos">Todos os setores</option>
+            <option value="Cozinha">Cozinha</option>
+            <option value="Salão">Salão</option>
+            <option value="Copa">Copa</option>
+            <option value="Caixa">Caixa</option>
+          </select>
+          <input
+            placeholder="Buscar produto..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="flex-1 min-w-32 px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
+          />
+        </div>
+
+        {/* Ações */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <button
+            onClick={copiarWhatsApp}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm hover:bg-zinc-700"
+          >
+            <Copy className="w-4 h-4" /> Copiar WhatsApp
+          </button>
+          <button
+            onClick={fecharDia}
+            disabled={fechando}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-orange-600 text-sm hover:bg-orange-500 disabled:opacity-50"
+          >
+            <CheckCheck className="w-4 h-4" />
+            {fechando ? "Fechando..." : "Marcar tudo e fechar dia"}
+          </button>
         </div>
 
         {carregando ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Carregando...</p>
-        ) : linhas.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            Nenhum pedido em {new Date(`${data}T12:00:00`).toLocaleDateString("pt-BR")}.
-          </p>
+          <p className="text-gray-400 text-sm">Carregando...</p>
+        ) : gruposFiltrados.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-12">Nenhuma requisição pendente para este dia/setor.</p>
         ) : (
-          <div className="space-y-6">
-            {porGrupo.map(([grupo, items]) => (
-              <section key={grupo}>
-                <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
-                  {grupo}
-                </h2>
-                <ul className="space-y-2">
-                  {items.map((l) => {
-                    const sugestao = Math.max(0, l.pedido - l.estoque);
+          <>
+            {/* Cabeçalho da tabela */}
+            <div className="grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 text-xs text-gray-500 mb-1 px-1">
+              <span>Produto</span>
+              <span className="text-center">Pedido</span>
+              <span className="text-center">Estoque</span>
+              <span className="text-center">A comprar</span>
+              <span />
+            </div>
+
+            {gruposFiltrados.map((g) => (
+              <div key={g.nome} className="mb-6">
+                <h2 className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-2">{g.nome}</h2>
+                <div className="space-y-1">
+                  {g.itens.map((it) => {
+                    const estoqueInsuficiente = it.estoque < it.pedido;
                     return (
-                      <li
-                        key={l.produto.id}
-                        className={`rounded-xl border bg-card px-4 py-3 transition ${
-                          l.todosComprados ? "border-border opacity-60" : "border-border"
+                      <div
+                        key={it.produto_id}
+                        className={`grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 items-center px-2 py-1.5 rounded ${
+                          it.comprado
+                            ? "bg-green-950/30 opacity-70"
+                            : estoqueInsuficiente
+                              ? "bg-zinc-900"
+                              : "bg-zinc-900"
                         }`}
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <p
-                              className={`truncate text-sm font-semibold text-foreground ${
-                                l.todosComprados ? "line-through" : ""
-                              }`}
-                            >
-                              {l.produto.nome}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {l.setores.size} setor(es) · unid.: {l.produto.unidade}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => marcarComprado(l, !l.todosComprados)}
-                            className={`flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs font-semibold uppercase tracking-wider transition ${
-                              l.todosComprados
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border bg-background text-foreground hover:border-primary"
-                            }`}
-                          >
-                            <Check size={14} />
-                            {l.todosComprados ? "Comprado" : "Marcar"}
-                          </button>
-                        </div>
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                          <div className="rounded-md border border-border bg-background py-1.5">
-                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                              Pedido
-                            </p>
-                            <p className="text-sm font-bold tabular-nums text-foreground">
-                              {l.pedido}
-                            </p>
-                          </div>
-                          <div className="rounded-md border border-border bg-background py-1.5">
-                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                              Estoque
-                            </p>
-                            <p
-                              className={`text-sm font-bold tabular-nums ${
-                                l.estoque <= 0 ? "text-destructive" : "text-foreground"
-                              }`}
-                            >
-                              {l.estoque}
-                            </p>
-                          </div>
-                          <div className="rounded-md border border-primary/60 bg-background py-1.5">
-                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                              A comprar
-                            </p>
-                            <input
-                              type="number"
-                              min={0}
-                              value={l.aComprar}
-                              onChange={(e) => setAjuste(l.produto.id, Number(e.target.value) || 0)}
-                              className="w-full bg-transparent text-center text-sm font-bold tabular-nums text-primary outline-none"
-                            />
-                            {sugestao !== l.aComprar && (
-                              <button
-                                onClick={() => setAjuste(l.produto.id, sugestao)}
-                                className="text-[9px] uppercase tracking-wider text-muted-foreground hover:text-primary"
-                              >
-                                sugestão: {sugestao}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </li>
+                        {/* Nome */}
+                        <span className={`text-sm ${it.comprado ? "line-through text-gray-500" : ""}`}>
+                          {estoqueInsuficiente && !it.comprado && (
+                            <AlertTriangle className="w-3 h-3 text-yellow-500 inline mr-1" />
+                          )}
+                          {it.nome}
+                          <span className="text-xs text-gray-500 ml-1">{it.unidade}</span>
+                        </span>
+
+                        {/* Pedido */}
+                        <span className="text-center text-sm text-gray-300">{it.pedido}</span>
+
+                        {/* Estoque */}
+                        <span
+                          className={`text-center text-sm ${estoqueInsuficiente ? "text-yellow-400" : "text-gray-400"}`}
+                        >
+                          {it.estoque}
+                        </span>
+
+                        {/* A comprar (editável) */}
+                        <input
+                          type="number"
+                          min={0}
+                          value={it.aComprar}
+                          disabled={it.comprado}
+                          onChange={(e) => setAComprar(it.produto_id, Number(e.target.value))}
+                          className="w-full text-center text-sm rounded px-1 py-0.5 bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-orange-500 disabled:opacity-40"
+                        />
+
+                        {/* Checkbox comprado */}
+                        <button
+                          onClick={() => marcarComprado(it)}
+                          disabled={salvando === it.produto_id}
+                          className={`flex items-center justify-center w-7 h-7 rounded border transition-colors ${
+                            it.comprado
+                              ? "bg-green-600 border-green-600 text-white"
+                              : "border-zinc-600 hover:border-orange-500"
+                          } disabled:opacity-40`}
+                        >
+                          {it.comprado && <Check className="w-4 h-4" />}
+                        </button>
+                      </div>
                     );
                   })}
-                </ul>
-              </section>
+                </div>
+              </div>
             ))}
-          </div>
+          </>
         )}
       </div>
-
-      {linhas.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-6 py-4 backdrop-blur">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-end gap-2">
-            <button
-              onClick={fecharDia}
-              className="rounded-md border border-border bg-card px-4 py-3 text-xs font-bold uppercase tracking-widest text-foreground transition hover:border-primary"
-            >
-              Fechar dia
-            </button>
-            <button
-              onClick={gerarTextoWhats}
-              className="flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-xs font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-95"
-            >
-              <Copy size={14} />
-              Copiar para WhatsApp
-            </button>
-          </div>
-        </div>
-      )}
-    </main>
+    </div>
   );
 }
