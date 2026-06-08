@@ -79,13 +79,22 @@ function EditarPedido() {
       return;
     }
     setSalvando(true);
-    const { error: e1 } = await supabase
+    const { data: updated, error: e1 } = await supabase
       .from("requisicoes")
       .update({ observacao: observacao.trim() || null })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("status", "pendente")
+      .select("id");
     if (e1) {
       setSalvando(false);
       return toast.error("Erro ao atualizar", { description: e1.message });
+    }
+    if (!updated || updated.length === 0) {
+      setSalvando(false);
+      setNaoEditavel(true);
+      return toast.error("Pedido não pode mais ser editado", {
+        description: "O status mudou. Recarregue o histórico.",
+      });
     }
     const { error: eDel } = await supabase
       .from("requisicao_itens")
