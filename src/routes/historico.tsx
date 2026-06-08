@@ -86,11 +86,20 @@ function HistoricoPage() {
 
   const cancelar = async (r: Requisicao) => {
     if (!confirm("Cancelar esta requisição?")) return;
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("requisicoes")
       .update({ status: "cancelada" })
-      .eq("id", r.id);
+      .eq("id", r.id)
+      .eq("status", "pendente")
+      .select("id");
     if (error) return toast.error("Erro ao cancelar", { description: error.message });
+    if (!data || data.length === 0) {
+      toast.error("Não foi possível cancelar", {
+        description: "Esta requisição já foi processada. Recarregue a página.",
+      });
+      carregar();
+      return;
+    }
     toast.success("Requisição cancelada");
     carregar();
   };

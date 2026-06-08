@@ -1,56 +1,42 @@
+# Plano: Correção dos warnings de segurança
 
-## Lista de compras consolidada (do dia)
+Foram detectados 6 warnings. Plano para resolver cada um sem alterar funcionalidades existentes.
 
-Nova tela `/admin/lista-compras` que junta todas as requisições pendentes do dia em uma única lista de compras, agrupada por categoria, com botão de marcar comprado e geração de texto pronto pro WhatsApp.
+## 1. RLS — DELETE de itens em requisições não-pendentes
+**Tabela:** `requisicao_itens`, política `req_itens_delete_own`
+Adicionar checagem `r.status = 'pendente'` (espelhando a política de UPDATE), via migração que faz DROP + CREATE da política.
 
-## Como vai funcionar (fluxo)
+## 2. RLS — Usuário pode alterar `status` da própria requisição
+**Tabela:** `requisicoes`, política `requisicoes_update_own_pendente`
+Hoje o WITH CHECK só exige `status = 'pendente'` após o update — o usuário pode manter status `pendente` mas isso já está OK; o risco é mudar para outro valor. Solução: revogar `UPDATE` na coluna `status` para `authenticated` e conceder apenas em colunas seguras (`observacao`). Admin continua podendo via política `requisicoes_admin_update` (role bypassa column grants quando feito por security definer? — usaremos abordagem alternativa mais simples):
+- Recriar a política com `WITH CHECK ((usuario_id = auth.uid()) AND status = 'pendente')` — já existe — **mas** adicionar grant em nível de coluna:
+  ```sql
+  REVOKE UPDATE ON public.requisicoes FROM authenticated;
+  GRANT UPDATE (observacao) ON public.requisicoes TO authenticated;
+  GRANT UPDATE ON public.requisicoes TO service_role;
+  ```
+  Admin executa updates via cliente também — então admins precisam ser autenticated com privilégio total. Solução: manter `GRANT UPDATE ON public.requisicoes TO authenticated` e em vez disso adicionar um **trigger BEFORE UPDATE** que impede non-admins de alterar `status` (compara OLD.status com NEW.status e checa `has_role(auth.uid(), 'admin')`).
 
-1. Líderes (Cozinha, Salão, Copa, Caixa) fazem pedidos durante o dia em `/pedido`.
-2. Admin abre `/admin/lista-compras` → vê **um item por produto**, somando o que foi pedido por todos os setores naquele dia.
-3. Para cada produto a tela mostra 3 colunas: **Pedido** (soma) · **Estoque atual** · **A comprar** (admin pode ajustar manualmente, sugestão = pedido − estoque, mínimo 0).
-4. Itens agrupados por **Grupo** (Limpeza, Descartáveis, Bebidas, Alimentos…) e ordenados por nome.
-5. Filtros no topo: **data** (default = hoje), **setor** (todos / específico), busca por nome.
-6. Cada linha tem um checkbox **"Comprado"**. Ao marcar, salva timestamp.
-7. Botão **"Copiar para WhatsApp"** gera texto formatado e copia pro clipboard. Exemplo:
-   ```
-   🛒 Lista de compras — 01/06
-   
-   *LIMPEZA*
-   • Detergente Ypê — 5 un
-   • Saco lixo 100L — 2 pct
-   
-   *BEBIDAS*
-   • Coca-Cola 2L — 12 un
-   ```
-8. Botão **"Marcar tudo como comprado e fechar"** atualiza status das requisições do dia de `pendente` → `comprada`.
+## 3. Mutations no cliente sem re-checagem de status
+**Arquivos:** `src/routes/historico.tsx` (`cancelar`), `src/routes/pedido.editar.$id.tsx` (`salvar`)
+- Adicionar `.eq('status', 'pendente')` em todos os `update` de `requisicoes` feitos por não-admins.
+- Verificar count de linhas afetadas; se 0, mostrar toast de erro ("requisição já foi processada, recarregue a página").
 
-## Mudanças no banco
+## 4. Admin guard apenas no cliente (defesa em profundidade)
+Já está mitigado pelas políticas RLS (toda escrita admin é gated por `has_role(auth.uid(), 'admin')`). Vou **marcar como ignorado** com justificativa: o guard de rota é UX; toda mutation admin é protegida por RLS server-side via `has_role`. Adicionar comentário em `admin.tsx` deixando isso explícito.
 
-Adicionar duas colunas em `requisicao_itens`:
-- `comprado boolean not null default false`
-- `comprado_em timestamptz`
+## 5. SECURITY DEFINER executáveis por authenticated (2 warnings)
+Funções: `has_role` e `current_user_perfil_id`.
+Ambas **precisam** ser executáveis pelo role `authenticated` porque são chamadas dentro de expressões RLS (Postgres avalia RLS como o role que faz a query). Revogar EXECUTE quebraria todo o controle de acesso.
+- **Ação:** marcar os 2 findings como `ignore` com explicação detalhada e atualizar a security memory para o scanner não re-flaggar.
 
-Permitir admin atualizar (nova policy `req_itens_admin_update`).
+## Resumo das ações
+1. **Migração SQL:**
+   - DROP + CREATE policy `req_itens_delete_own` com check de status pendente
+   - Trigger BEFORE UPDATE em `requisicoes` impedindo non-admin de alterar `status`
+2. **Edição de código:**
+   - `src/routes/historico.tsx`: `.eq('status','pendente')` + verificar linhas afetadas
+   - `src/routes/pedido.editar.$id.tsx`: idem no `salvar`
+3. **Marcar findings como ignored** (2 SECURITY DEFINER + 1 ROUTE_ONLY_ADMIN_GUARD) com justificativa e atualizar @security-memory.
 
-Adicionar status `'comprada'` ao fluxo de `requisicoes` (já é text, sem CHECK — só convenção no código).
-
-Nenhuma tabela nova. Sem mudança no `produtos` / `estoque_atual`.
-
-## Arquivos
-
-- `supabase/migrations/<novo>.sql` — colunas + policy admin update em `requisicao_itens`.
-- `src/routes/admin.lista-compras.tsx` — nova tela (consulta agregada client-side: busca itens pendentes do dia + estoque + produtos, agrupa por `produto_id`).
-- `src/routes/admin.index.tsx` — adicionar card/link "Lista de compras do dia".
-
-## De onde sai a lista (resposta direta)
-
-Hoje a lista "existe" apenas implicitamente nas requisições individuais em `/admin/requisicoes` e no `/exportar`. Depois desta mudança, a **fonte oficial** vira `/admin/lista-compras` — é lá que o admin extrai (visualiza, ajusta, marca comprado, copia pro WhatsApp).
-
-## O que NÃO entra agora (posso fazer depois se quiser)
-
-- Exportar PDF / Excel da lista.
-- Receber a compra e atualizar `estoque_atual` automaticamente.
-- Histórico de compras (relatório do que foi comprado por dia/semana).
-- Sugestão automática de fornecedor por categoria.
-
-Confirma que pode partir pra implementação?
+Nenhum comportamento visível ao usuário muda: usuário continua editando/cancelando suas pendentes; admin continua aprovando; apenas fechamos brechas onde estado mudou em paralelo ou cliente foi manipulado.

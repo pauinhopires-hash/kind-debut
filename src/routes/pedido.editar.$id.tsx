@@ -33,7 +33,12 @@ function EditarPedido() {
     (async () => {
       setCarregando(true);
       const [{ data: req }, { data: itens }, { data: prods }] = await Promise.all([
-        supabase.from("requisicoes").select("id, status, observacao").eq("id", id).maybeSingle(),
+        supabase
+          .from("requisicoes")
+          .select("id, status, observacao")
+          .eq("id", id)
+          .eq("usuario_id", user.id)
+          .maybeSingle(),
         supabase.from("requisicao_itens").select("produto_id, quantidade").eq("requisicao_id", id),
         supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
       ]);
@@ -79,13 +84,22 @@ function EditarPedido() {
       return;
     }
     setSalvando(true);
-    const { error: e1 } = await supabase
+    const { data: updated, error: e1 } = await supabase
       .from("requisicoes")
       .update({ observacao: observacao.trim() || null })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("status", "pendente")
+      .select("id");
     if (e1) {
       setSalvando(false);
       return toast.error("Erro ao atualizar", { description: e1.message });
+    }
+    if (!updated || updated.length === 0) {
+      setSalvando(false);
+      setNaoEditavel(true);
+      return toast.error("Pedido não pode mais ser editado", {
+        description: "O status mudou. Recarregue o histórico.",
+      });
     }
     const { error: eDel } = await supabase
       .from("requisicao_itens")
