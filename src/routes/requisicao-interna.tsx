@@ -145,7 +145,7 @@ function RequisicaoInterna() {
             <input
               type="number"
               min={1}
-              max={produtoSel?.estoque_atual}
+              max={produtoSel?.estoque_disponivel}
               value={quantidade}
               onChange={e => setQuantidade(Number(e.target.value))}
               placeholder="Qtd"
