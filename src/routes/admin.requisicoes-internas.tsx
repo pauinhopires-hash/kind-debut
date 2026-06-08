@@ -82,47 +82,56 @@ function AdminRequisicoesInternas() {
   };
 
   const entregar = async (req: RequisicaoInterna) => {
-    const reqItens = itens[req.id];
-    if (!reqItens) { toast.error("Carregue os itens primeiro"); return; }
+    let reqItens = itens[req.id];
+    if (!reqItens) {
+      const { data, error } = await supabase
+        .from("requisicao_interna_itens")
+        .select("id, quantidade, produto_id, produtos(nome, unidade)")
+        .eq("requisicao_id", req.id);
+      if (error || !data || data.length === 0) {
+        toast.error("NÃ£o foi possÃ­vel carregar os itens da requisiÃ§Ã£o");
+        return;
+      }
+      reqItens = data as Item[];
+      setItens(prev => ({ ...prev, [req.id]: reqItens }));
+    }
 
     try {
-      // Update status
       const { error: errStatus } = await supabase
         .from("requisicoes_internas")
         .update({ status: "entregue" })
         .eq("id", req.id);
       if (errStatus) throw errStatus;
 
-      // Baixa no estoque + registra movimentaÃ§Ã£o para cada item
       for (const item of reqItens) {
-        // Get current stock
-        const { data: prod, error: errProd } = await supabase
-          .from("produtos")
-          .select("estoque_atual")
-          .eq("id", item.produto_id)
+        const { data: est, error: errEst } = await supabase
+          .from("estoque_atual")
+          .select("quantidade")
+          .eq("produto_id", item.produto_id)
           .single();
-        if (errProd) throw errProd;
-
-        const estoqueAntes = prod.estoque_atual;
-        const estoqueDepois = estoqueAntes - item.quantidade;
-
-        // Update stock
-        const { error: errEst } = await supabase
-          .from("produtos")
-          .update({ estoque_atual: estoqueDepois })
-          .eq("id", item.produto_id);
         if (errEst) throw errEst;
 
-        // Register movement
-        await supabase.from("movimentacoes_estoque").insert({
-          tipo: "saida",
-          produto_id: item.produto_id,
-          quantidade: item.quantidade,
-          estoque_antes: estoqueAntes,
-          estoque_depois: estoqueDepois,
-          requisicao_interna_id: req.id,
-          observacao: `SaÃ­da por requisiÃ§Ã£o interna #${req.id.substring(0, 8)}`,
-        });
+        const estoqueAntes = est.quantidade;
+        const estoqueDepois = estoqueAntes - item.quantidade;
+
+        const { error: errUpd } = await supabase
+          .from("estoque_atual")
+          .update({ quantidade: estoqueDepois })
+          .eq("produto_id", item.produto_id);
+        if (errUpd) throw errUpd;
+
+        const { error: errMov } = await supabase
+          .from("movimentacoes_estoque")
+          .insert({
+            tipo: "saida",
+            produto_id: item.produto_id,
+            quantidade: item.quantidade,
+            estoque_antes: estoqueAntes,
+            estoque_depois: estoqueDepois,
+            requisicao_id: req.id,
+            observacao: `SaÃ­da por requisiÃ§Ã£o interna #${req.id.substring(0, 8)}`,
+          });
+        if (errMov) throw errMov;
       }
 
       toast.success("Entrega confirmada! Estoque atualizado.");
@@ -154,7 +163,7 @@ function AdminRequisicoesInternas() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2mx mx-auto p-4">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate({ to: "/admin" })} className="text-gray-400 hover:text-white">
             <ArrowLeft size={22} />
@@ -195,7 +204,6 @@ function AdminRequisicoesInternas() {
                     <p className="text-gray-400 text-sm mb-2 italic">"{req.observacao}"</p>
                   )}
 
-                  {/* Actions */}
                   <div className="flex gap-2 flex-wrap">
                     {req.status === "pendente" && (
                       <>
@@ -215,9 +223,8 @@ function AdminRequisicoesInternas() {
                     )}
                     {req.status === "aprovada" && (
                       <button
-                        onClick={() => { fetchItens(req.id); setExpandido(req.id); }}
+                        onClick={() => entregar(req)}
                         className="flex items-center gap-1 bg-green-700 hover:bg-green-600 text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
-                        onClickCapture={(e) => { e.stopPropagation(); entregar(req); }}
                       >
                         <PackageCheck size={14} /> Confirmar Entrega
                       </button>
@@ -232,7 +239,6 @@ function AdminRequisicoesInternas() {
                   </div>
                 </div>
 
-                {/* Itens expandidos */}
                 {expandido === req.id && (
                   <div className="border-t border-zinc-800 p-4 bg-zinc-950">
                     {itens[req.id] ? (
