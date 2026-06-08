@@ -12,7 +12,7 @@ type Produto = {
   id: string;
   nome: string;
   unidade: string;
-  estoque_atual: number;
+  estoque_disponivel: number;
 };
 
 type ItemRequisicao = {
@@ -44,12 +44,17 @@ function RequisicaoInterna() {
 
   const fetchProdutos = async () => {
     const { data, error } = await supabase
-      .from("produtos")
-      .select("id, nome, unidade, estoque_atual")
-      .gt("estoque_atual", 0)
-      .order("nome");
+      .from("estoque_atual")
+      .select("quantidade, produto_id, produtos(id, nome, unidade)")
+      .gt("quantidade", 0);
     if (error) { toast.error("Erro ao carregar produtos"); return; }
-    setProdutos(data || []);
+    const lista: Produto[] = (data || []).map((e: any) => ({
+      id: e.produto_id,
+      nome: e.produtos?.nome || "",
+      unidade: e.produtos?.unidade || "",
+      estoque_disponivel: e.quantidade,
+    })).sort((a: Produto, b: Produto) => a.nome.localeCompare(b.nome));
+    setProdutos(lista);
   };
 
   const adicionarItem = () => {
@@ -61,8 +66,8 @@ function RequisicaoInterna() {
       toast.error("Produto jÃ¡ adicionado");
       return;
     }
-    if (quantidade > produto.estoque_atual) {
-      toast.error(`Estoque disponÃ­vel: ${produto.estoque_atual} ${produto.unidade}`);
+    if (quantidade > produto.estoque_disponivel) {
+      toast.error(`Estoque disponÃ­vel: ${produto.estoque_disponivel} ${produto.unidade}`);
       return;
     }
     setItens([...itens, {
@@ -131,7 +136,7 @@ function RequisicaoInterna() {
             <option value="">Selecione um produto...</option>
             {produtos.map(p => (
               <option key={p.id} value={p.id}>
-                {p.nome} â disponÃ­vel: {p.estoque_atual} {p.unidade}
+                {p.nome} â disponÃ­vel: {p.estoque_disponivel} {p.unidade}
               </option>
             ))}
           </select>
