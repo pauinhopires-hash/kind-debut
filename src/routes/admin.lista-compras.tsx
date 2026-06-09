@@ -52,7 +52,7 @@ function AdminListaCompras() {
           requisicoes!inner (id, status, created_at)
         `,
         )
-        .eq("requisicoes.status", "pendente")
+        .in("requisicoes.status", ["pendente", "aprovada"])
         .gte("requisicoes.created_at", `${data}T00:00:00`)
         .lte("requisicoes.created_at", `${data}T23:59:59`);
 
