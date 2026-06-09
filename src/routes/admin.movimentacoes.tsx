@@ -28,12 +28,7 @@ function AdminMovimentacoes() {
   const [filtroProduto, setFiltroProduto] = useState<string>("");
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate({ to: "/login" }); return; }
-      fetchMovimentacoes();
-    };
-    init();
+    fetchMovimentacoes();
   }, []);
 
   const fetchMovimentacoes = async () => {
@@ -43,7 +38,7 @@ function AdminMovimentacoes() {
       .select("id, tipo, quantidade, estoque_antes, estoque_depois, observacao, created_at, produto_id, produtos(nome, unidade)")
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) { toast.error("Erro ao carregar movimentaÃ§Ãµes"); setLoading(false); return; }
+    if (error) { toast.error("Erro ao carregar movimentações"); setLoading(false); return; }
     setMovimentacoes((data || []) as Movimentacao[]);
     setLoading(false);
   };
@@ -68,18 +63,18 @@ function AdminMovimentacoes() {
 
   const tipoLabel = (tipo: string) => {
     if (tipo === "entrada") return "Entrada";
-    if (tipo === "saida") return "SaÃ­da";
+    if (tipo === "saida") return "Saída";
     return "Ajuste";
   };
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2mx mx-auto p-4">
+      <div className="max-w-2xl mx-auto p-4">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate({ to: "/admin" })} className="text-gray-400 hover:text-white">
             <ArrowLeft size={22} />
           </button>
-          <h1 className="text-xl font-bold text-orange-500">MovimentaÃ§Ãµes de Estoque</h1>
+          <h1 className="text-xl font-bold text-orange-500">Movimentações de Estoque</h1>
         </div>
 
         {/* Filtros */}
@@ -107,12 +102,11 @@ function AdminMovimentacoes() {
           />
         </div>
 
-        {/* Stats rÃ¡pidos */}
+        {/* Stats rápidos */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          {/* Items */}
-          { [
+          {[
             { label: "Entradas", tipo: "entrada", color: "text-green-400" },
-            { label: "SaÃ­das", tipo: "saida", color: "text-red-400" },
+            { label: "Saídas", tipo: "saida", color: "text-red-400" },
             { label: "Ajustes", tipo: "ajuste", color: "text-blue-400" },
           ].map(s => (
             <div key={s.tipo} className="bg-zinc-900 rounded-xl p-3 text-center">
@@ -128,7 +122,7 @@ function AdminMovimentacoes() {
         {loading ? (
           <p className="text-gray-400 text-center py-8">Carregando...</p>
         ) : movFiltradas.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">Nenhuma movimentaÃ§Ã£o encontrada.</p>
+          <p className="text-gray-500 text-center py-8">Nenhuma movimentação encontrada.</p>
         ) : (
           <div className="space-y-2">
             {movFiltradas.map(mov => (
@@ -150,7 +144,7 @@ function AdminMovimentacoes() {
                   </div>
                   <div className="text-right">
                     <p className="text-gray-300 text-xs">
-                      {mov.estoque_antes} â {mov.estoque_depois}
+                      {mov.estoque_antes} → {mov.estoque_depois}
                     </p>
                     <p className="text-gray-500 text-xs">
                       {new Date(mov.created_at).toLocaleDateString("pt-BR", {
