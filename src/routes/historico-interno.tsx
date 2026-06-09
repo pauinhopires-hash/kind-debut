@@ -44,7 +44,7 @@ function HistoricoInterno() {
       .select("id, status, observacao, created_at")
       .eq("usuario_id", userId)
       .order("created_at", { ascending: false });
-    if (error) { toast.error("Erro ao carregar histÃ³rico"); setLoading(false); return; }
+    if (error) { toast.error("Erro ao carregar histórico"); setLoading(false); return; }
     setRequisicoes(data || []);
     setLoading(false);
   };
@@ -95,12 +95,12 @@ function HistoricoInterno() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2mz mx-auto p-4">
+      <div className="max-w-2xl mx-auto p-4">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate({ to: "/" })} className="text-gray-400 hover:text-white">
             <ArrowLeft size={22} />
           </button>
-          <h1 className="text-xl font-bold text-orange-500">Minhas RequisiÃ§Ãµes</h1>
+          <h1 className="text-xl font-bold text-orange-500">Minhas Requisições</h1>
         </div>
 
         {loading ? (
@@ -108,12 +108,12 @@ function HistoricoInterno() {
         ) : requisicoes.length === 0 ? (
           <div className="text-center py-12">
             <Package size={48} className="text-zinc-700 mx-auto mb-3" />
-            <p className="text-gray-500">VocÃª ainda nÃ£o fez nenhuma requisiÃ§Ã£o.</p>
+            <p className="text-gray-500">Você ainda não fez nenhuma requisição.</p>
             <button
               onClick={() => navigate({ to: "/requisicao-interna" })}
-              className="mt-4 bg-orange-600 hover:bs-orange-500 text-white px-6 py-2 rounded-xl transition-colors"
+              className="mt-4 bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-xl transition-colors"
             >
-              Fazer requisiÃ§Ã£o
+              Fazer requisição
             </button>
           </div>
         ) : (
@@ -182,7 +182,7 @@ function HistoricoInterno() {
             onClick={() => navigate({ to: "/requisicao-interna" })}
             className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl py-3 transition-colors"
           >
-            + Nova RequisiÃ§Ã£o
+            + Nova Requisição
           </button>
         </div>
       </div>

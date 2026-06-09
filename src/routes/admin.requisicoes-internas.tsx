@@ -32,12 +32,7 @@ function AdminRequisicoesInternas() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate({ to: "/login" }); return; }
-      fetchRequisicoes();
-    };
-    init();
+    fetchRequisicoes();
   }, []);
 
   const fetchRequisicoes = async () => {
@@ -46,7 +41,7 @@ function AdminRequisicoesInternas() {
       .from("requisicoes_internas")
       .select("id, status, observacao, created_at, usuario_id, usuarios(nome)")
       .order("created_at", { ascending: false });
-    if (error) { toast.error("Erro ao carregar requisiÃ§Ãµes"); setLoading(false); return; }
+    if (error) { toast.error("Erro ao carregar requisições"); setLoading(false); return; }
     setRequisicoes((data || []) as RequisicaoInterna[]);
     setLoading(false);
   };
@@ -77,7 +72,7 @@ function AdminRequisicoesInternas() {
       .update({ status: "aprovada" })
       .eq("id", req.id);
     if (error) { toast.error("Erro ao aprovar"); return; }
-    toast.success("RequisiÃ§Ã£o aprovada!");
+    toast.success("Requisição aprovada!");
     fetchRequisicoes();
   };
 
@@ -89,7 +84,7 @@ function AdminRequisicoesInternas() {
         .select("id, quantidade, produto_id, produtos(nome, unidade)")
         .eq("requisicao_id", req.id);
       if (error || !data || data.length === 0) {
-        toast.error("NÃ£o foi possÃ­vel carregar os itens da requisiÃ§Ã£o");
+        toast.error("Não foi possível carregar os itens da requisição");
         return;
       }
       reqItens = data as Item[];
@@ -97,29 +92,25 @@ function AdminRequisicoesInternas() {
     }
 
     try {
-      const { error: errStatus } = await supabase
-        .from("requisicoes_internas")
-        .update({ status: "entregue" })
-        .eq("id", req.id);
-      if (errStatus) throw errStatus;
+      const { data: { session } } = await supabase.auth.getSession();
+      const usuarioId = session?.user.id ?? null;
 
+      // 1. Para cada item: lê estoque, registra movimentação, atualiza estoque
       for (const item of reqItens) {
         const { data: est, error: errEst } = await supabase
           .from("estoque_atual")
           .select("quantidade")
           .eq("produto_id", item.produto_id)
-          .single();
+          .maybeSingle();
         if (errEst) throw errEst;
 
-        const estoqueAntes = est.quantidade;
-        const estoqueDepois = estoqueAntes - item.quantidade;
+        const estoqueAntes = est ? Number(est.quantidade) : 0;
+        if (estoqueAntes < Number(item.quantidade)) {
+          throw new Error(`Estoque insuficiente para ${item.produtos?.nome ?? "produto"} (disponível: ${estoqueAntes})`);
+        }
+        const estoqueDepois = estoqueAntes - Number(item.quantidade);
 
-        const { error: errUpd } = await supabase
-          .from("estoque_atual")
-          .update({ quantidade: estoqueDepois })
-          .eq("produto_id", item.produto_id);
-        if (errUpd) throw errUpd;
-
+        // Registra movimentação ANTES de mexer no estoque
         const { error: errMov } = await supabase
           .from("movimentacoes_estoque")
           .insert({
@@ -129,15 +120,29 @@ function AdminRequisicoesInternas() {
             estoque_antes: estoqueAntes,
             estoque_depois: estoqueDepois,
             requisicao_id: req.id,
-            observacao: `SaÃ­da por requisiÃ§Ã£o interna #${req.id.substring(0, 8)}`,
+            usuario_id: usuarioId,
+            observacao: `Saída por requisição interna #${req.id.substring(0, 8)}`,
           });
         if (errMov) throw errMov;
+
+        const { error: errUpd } = await supabase
+          .from("estoque_atual")
+          .upsert({ produto_id: item.produto_id, quantidade: estoqueDepois });
+        if (errUpd) throw errUpd;
       }
+
+      // 2. Só depois marca como entregue
+      const { error: errStatus } = await supabase
+        .from("requisicoes_internas")
+        .update({ status: "entregue" })
+        .eq("id", req.id);
+      if (errStatus) throw errStatus;
 
       toast.success("Entrega confirmada! Estoque atualizado.");
       fetchRequisicoes();
-    } catch (e: any) {
-      toast.error("Erro ao confirmar entrega: " + e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erro ao confirmar entrega: " + msg);
     }
   };
 
@@ -147,7 +152,7 @@ function AdminRequisicoesInternas() {
       .update({ status: "rejeitada" })
       .eq("id", id);
     if (error) { toast.error("Erro ao rejeitar"); return; }
-    toast.success("RequisiÃ§Ã£o rejeitada.");
+    toast.success("Requisição rejeitada.");
     fetchRequisicoes();
   };
 
@@ -163,13 +168,13 @@ function AdminRequisicoesInternas() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2mx mx-auto p-4">
+      <div className="max-w-2xl mx-auto p-4">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate({ to: "/admin" })} className="text-gray-400 hover:text-white">
             <ArrowLeft size={22} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-orange-500">RequisiÃ§Ãµes Internas</h1>
+            <h1 className="text-xl font-bold text-orange-500">Requisições Internas</h1>
             {pendentes > 0 && (
               <p className="text-yellow-400 text-sm">{pendentes} pendente{pendentes > 1 ? "s" : ""}</p>
             )}
@@ -179,7 +184,7 @@ function AdminRequisicoesInternas() {
         {loading ? (
           <p className="text-gray-400 text-center py-8">Carregando...</p>
         ) : requisicoes.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">Nenhuma requisiÃ§Ã£o encontrada.</p>
+          <p className="text-gray-500 text-center py-8">Nenhuma requisição encontrada.</p>
         ) : (
           <div className="space-y-3">
             {requisicoes.map(req => (
@@ -187,7 +192,7 @@ function AdminRequisicoesInternas() {
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-semibold text-white">{req.usuarios?.nome ?? "UsuÃ¡rio"}</p>
+                      <p className="font-semibold text-white">{req.usuarios?.nome ?? "Usuário"}</p>
                       <p className="text-gray-400 text-xs">
                         {new Date(req.created_at).toLocaleDateString("pt-BR", {
                           day: "2-digit", month: "2-digit", year: "numeric",

@@ -64,11 +64,11 @@ function RequisicaoInterna() {
     const produto = produtos.find(p => p.id === produtoSelecionado);
     if (!produto) return;
     if (itens.find(i => i.produto_id === produtoSelecionado)) {
-      toast.error("Produto jÃ¡ adicionado");
+      toast.error("Produto já adicionado");
       return;
     }
     if (quantidade > produto.estoque_disponivel) {
-      toast.error(`Estoque disponÃ­vel: ${produto.estoque_disponivel} ${produto.unidade}`);
+      toast.error(`Estoque disponível: ${produto.estoque_disponivel} ${produto.unidade}`);
       return;
     }
     setItens([...itens, {
@@ -106,10 +106,11 @@ function RequisicaoInterna() {
         })));
       if (errItens) throw errItens;
 
-      toast.success("RequisiÃ§Ã£o enviada com sucesso!");
+      toast.success("Requisição enviada com sucesso!");
       navigate({ to: "/historico-interno" });
-    } catch (e: any) {
-      toast.error("Erro ao enviar requisiÃ§Ã£o: " + e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erro ao enviar requisição: " + msg);
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ function RequisicaoInterna() {
           <button onClick={() => navigate({ to: "/" })} className="text-gray-400 hover:text-white">
             <ArrowLeft size={22} />
           </button>
-          <h1 className="text-xl font-bold text-orange-500">RequisiÃ§Ã£o Interna</h1>
+          <h1 className="text-xl font-bold text-orange-500">Requisição Interna</h1>
         </div>
 
         {/* Adicionar item */}
@@ -138,7 +139,7 @@ function RequisicaoInterna() {
             <option value="">Selecione um produto...</option>
             {produtos.map(p => (
               <option key={p.id} value={p.id}>
-                {p.nome} â disponÃ­vel: {p.estoque_disponivel} {p.unidade}
+                {p.nome} → disponível: {p.estoque_disponivel} {p.unidade}
               </option>
             ))}
           </select>
@@ -168,7 +169,7 @@ function RequisicaoInterna() {
         {/* Lista de itens */}
         {itens.length > 0 && (
           <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Itens da RequisiÃ§Ã£o</h2>
+            <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Itens da Requisição</h2>
             <div className="space-y-2">
               {itens.map(item => (
                 <div key={item.produto_id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2">
@@ -185,14 +186,14 @@ function RequisicaoInterna() {
           </div>
         )}
 
-        {/* ObservaÃ§Ã£o */}
+        {/* Observação */}
         <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-          <h2 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">ObservaÃ§Ã£o (opcional)</h2>
+          <h2 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Observação (opcional)</h2>
           <textarea
             value={observacao}
             onChange={e => setObservacao(e.target.value)}
             rows={3}
-            placeholder="Motivo da requisiÃ§Ã£o, urgÃªncia, etc."
+            placeholder="Motivo da requisição, urgência, etc."
             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none focus:outline-none focus:border-orange-500"
           />
         </div>
@@ -203,7 +204,7 @@ function RequisicaoInterna() {
           className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 transition-colors"
         >
           <Send size={18} />
-          {loading ? "Enviando..." : `Enviar RequisiÃ§Ã£o (${itens.length} ${itens.length === 1 ? "item" : "itens"})`}
+          {loading ? "Enviando..." : `Enviar Requisição (${itens.length} ${itens.length === 1 ? "item" : "itens"})`}
         </button>
       </div>
     </div>
