@@ -41,11 +41,10 @@ function AdminIndex() {
         navigate({ to: "/login" });
         return;
       }
-      const { data } = await supabase.from("usuarios").select("nome, perfil").eq("id", session.user.id).single();
-      if (data) {
-        setNomeUsuario(data.nome);
-        if (data.perfil !== "admin") navigate({ to: "/" });
-      }
+      const { data } = await supabase.from("usuarios").select("nome").eq("id", session.user.id).single();
+      if (data) setNomeUsuario(data.nome);
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" });
+      if (!isAdmin) navigate({ to: "/" });
       fetchStats();
     };
     init();
