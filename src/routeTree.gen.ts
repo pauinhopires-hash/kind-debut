@@ -9,20 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RequisicaoInternaRouteImport } from './routes/requisicao-interna'
 import { Route as PedidoRouteImport } from './routes/pedido'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HistoricoInternoRouteImport } from './routes/historico-interno'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as ExportarRouteImport } from './routes/exportar'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as AdminRequisicoesInternasRouteImport } from './routes/admin.requisicoes-internas'
 import { Route as AdminRequisicoesRouteImport } from './routes/admin.requisicoes'
 import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
+import { Route as AdminMovimentacoesRouteImport } from './routes/admin.movimentacoes'
 import { Route as AdminListaComprasRouteImport } from './routes/admin.lista-compras'
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
 
+const RequisicaoInternaRoute = RequisicaoInternaRouteImport.update({
+  id: '/requisicao-interna',
+  path: '/requisicao-interna',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PedidoRoute = PedidoRouteImport.update({
   id: '/pedido',
   path: '/pedido',
@@ -31,6 +40,11 @@ const PedidoRoute = PedidoRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoricoInternoRoute = HistoricoInternoRouteImport.update({
+  id: '/historico-interno',
+  path: '/historico-interno',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoricoRoute = HistoricoRouteImport.update({
@@ -63,6 +77,12 @@ const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRequisicoesInternasRoute =
+  AdminRequisicoesInternasRouteImport.update({
+    id: '/requisicoes-internas',
+    path: '/requisicoes-internas',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminRequisicoesRoute = AdminRequisicoesRouteImport.update({
   id: '/requisicoes',
   path: '/requisicoes',
@@ -71,6 +91,11 @@ const AdminRequisicoesRoute = AdminRequisicoesRouteImport.update({
 const AdminProdutosRoute = AdminProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMovimentacoesRoute = AdminMovimentacoesRouteImport.update({
+  id: '/movimentacoes',
+  path: '/movimentacoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminListaComprasRoute = AdminListaComprasRouteImport.update({
@@ -94,12 +119,16 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/exportar': typeof ExportarRoute
   '/historico': typeof HistoricoRoute
+  '/historico-interno': typeof HistoricoInternoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRouteWithChildren
+  '/requisicao-interna': typeof RequisicaoInternaRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
+  '/admin/movimentacoes': typeof AdminMovimentacoesRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
+  '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/pedido/editar/$id': typeof PedidoEditarIdRoute
@@ -108,12 +137,16 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/exportar': typeof ExportarRoute
   '/historico': typeof HistoricoRoute
+  '/historico-interno': typeof HistoricoInternoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRouteWithChildren
+  '/requisicao-interna': typeof RequisicaoInternaRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
+  '/admin/movimentacoes': typeof AdminMovimentacoesRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
+  '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin': typeof AdminIndexRoute
   '/pedido/editar/$id': typeof PedidoEditarIdRoute
@@ -124,12 +157,16 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/exportar': typeof ExportarRoute
   '/historico': typeof HistoricoRoute
+  '/historico-interno': typeof HistoricoInternoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRouteWithChildren
+  '/requisicao-interna': typeof RequisicaoInternaRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
+  '/admin/movimentacoes': typeof AdminMovimentacoesRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
+  '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/pedido/editar/$id': typeof PedidoEditarIdRoute
@@ -141,12 +178,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/exportar'
     | '/historico'
+    | '/historico-interno'
     | '/login'
     | '/pedido'
+    | '/requisicao-interna'
     | '/admin/estoque'
     | '/admin/lista-compras'
+    | '/admin/movimentacoes'
     | '/admin/produtos'
     | '/admin/requisicoes'
+    | '/admin/requisicoes-internas'
     | '/admin/usuarios'
     | '/admin/'
     | '/pedido/editar/$id'
@@ -155,12 +196,16 @@ export interface FileRouteTypes {
     | '/'
     | '/exportar'
     | '/historico'
+    | '/historico-interno'
     | '/login'
     | '/pedido'
+    | '/requisicao-interna'
     | '/admin/estoque'
     | '/admin/lista-compras'
+    | '/admin/movimentacoes'
     | '/admin/produtos'
     | '/admin/requisicoes'
+    | '/admin/requisicoes-internas'
     | '/admin/usuarios'
     | '/admin'
     | '/pedido/editar/$id'
@@ -170,12 +215,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/exportar'
     | '/historico'
+    | '/historico-interno'
     | '/login'
     | '/pedido'
+    | '/requisicao-interna'
     | '/admin/estoque'
     | '/admin/lista-compras'
+    | '/admin/movimentacoes'
     | '/admin/produtos'
     | '/admin/requisicoes'
+    | '/admin/requisicoes-internas'
     | '/admin/usuarios'
     | '/admin/'
     | '/pedido/editar/$id'
@@ -186,12 +235,21 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   ExportarRoute: typeof ExportarRoute
   HistoricoRoute: typeof HistoricoRoute
+  HistoricoInternoRoute: typeof HistoricoInternoRoute
   LoginRoute: typeof LoginRoute
   PedidoRoute: typeof PedidoRouteWithChildren
+  RequisicaoInternaRoute: typeof RequisicaoInternaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/requisicao-interna': {
+      id: '/requisicao-interna'
+      path: '/requisicao-interna'
+      fullPath: '/requisicao-interna'
+      preLoaderRoute: typeof RequisicaoInternaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pedido': {
       id: '/pedido'
       path: '/pedido'
@@ -204,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historico-interno': {
+      id: '/historico-interno'
+      path: '/historico-interno'
+      fullPath: '/historico-interno'
+      preLoaderRoute: typeof HistoricoInternoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/historico': {
@@ -248,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/requisicoes-internas': {
+      id: '/admin/requisicoes-internas'
+      path: '/requisicoes-internas'
+      fullPath: '/admin/requisicoes-internas'
+      preLoaderRoute: typeof AdminRequisicoesInternasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/requisicoes': {
       id: '/admin/requisicoes'
       path: '/requisicoes'
@@ -260,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/produtos'
       fullPath: '/admin/produtos'
       preLoaderRoute: typeof AdminProdutosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/movimentacoes': {
+      id: '/admin/movimentacoes'
+      path: '/movimentacoes'
+      fullPath: '/admin/movimentacoes'
+      preLoaderRoute: typeof AdminMovimentacoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/lista-compras': {
@@ -289,8 +368,10 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminEstoqueRoute: typeof AdminEstoqueRoute
   AdminListaComprasRoute: typeof AdminListaComprasRoute
+  AdminMovimentacoesRoute: typeof AdminMovimentacoesRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminRequisicoesRoute: typeof AdminRequisicoesRoute
+  AdminRequisicoesInternasRoute: typeof AdminRequisicoesInternasRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -298,8 +379,10 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminEstoqueRoute: AdminEstoqueRoute,
   AdminListaComprasRoute: AdminListaComprasRoute,
+  AdminMovimentacoesRoute: AdminMovimentacoesRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminRequisicoesRoute: AdminRequisicoesRoute,
+  AdminRequisicoesInternasRoute: AdminRequisicoesInternasRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -322,9 +405,21 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   ExportarRoute: ExportarRoute,
   HistoricoRoute: HistoricoRoute,
+  HistoricoInternoRoute: HistoricoInternoRoute,
   LoginRoute: LoginRoute,
   PedidoRoute: PedidoRouteWithChildren,
+  RequisicaoInternaRoute: RequisicaoInternaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
