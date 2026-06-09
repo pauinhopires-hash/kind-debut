@@ -58,6 +58,60 @@ export type Database = {
           },
         ]
       }
+      movimentacoes_estoque: {
+        Row: {
+          created_at: string
+          estoque_antes: number
+          estoque_depois: number
+          id: string
+          observacao: string | null
+          produto_id: string
+          quantidade: number
+          requisicao_id: string | null
+          tipo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          estoque_antes: number
+          estoque_depois: number
+          id?: string
+          observacao?: string | null
+          produto_id: string
+          quantidade: number
+          requisicao_id?: string | null
+          tipo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          estoque_antes?: number
+          estoque_depois?: number
+          id?: string
+          observacao?: string | null
+          produto_id?: string
+          quantidade?: number
+          requisicao_id?: string | null
+          tipo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           created_at: string
@@ -125,6 +179,45 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requisicao_interna_itens: {
+        Row: {
+          created_at: string
+          id: string
+          produto_id: string
+          quantidade: number
+          requisicao_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          produto_id: string
+          quantidade: number
+          requisicao_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          produto_id?: string
+          quantidade?: number
+          requisicao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisicao_interna_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisicao_interna_itens_requisicao_id_fkey"
+            columns: ["requisicao_id"]
+            isOneToOne: false
+            referencedRelation: "requisicoes_internas"
             referencedColumns: ["id"]
           },
         ]
@@ -209,6 +302,41 @@ export type Database = {
           },
           {
             foreignKeyName: "requisicoes_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requisicoes_internas: {
+        Row: {
+          created_at: string
+          id: string
+          observacao: string | null
+          status: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisicoes_internas_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
