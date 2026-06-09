@@ -19,6 +19,7 @@ export function useAuth() {
   const [perfil, setPerfil] = useState<PerfilRow | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
@@ -28,6 +29,7 @@ export function useAuth() {
         setUsuario(null);
         setPerfil(null);
         setIsAdmin(false);
+        setProfileLoading(false);
       }
     });
 
@@ -35,6 +37,7 @@ export function useAuth() {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
+      if (!data.session?.user) setProfileLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -43,6 +46,7 @@ export function useAuth() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    setProfileLoading(true);
     (async () => {
       const { data: u } = await supabase
         .from("usuarios")
@@ -58,8 +62,9 @@ export function useAuth() {
           .eq("id", u.perfil_id)
           .maybeSingle();
         if (!cancelled) setPerfil(p as PerfilRow | null);
+      } else if (!cancelled) {
+        setPerfil(null);
       }
-      // role
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -67,6 +72,7 @@ export function useAuth() {
       if (!cancelled) {
         const list = (roles ?? []) as Array<{ role: string }>;
         setIsAdmin(list.some((r) => r.role === "admin"));
+        setProfileLoading(false);
       }
     })();
     return () => {
@@ -74,5 +80,5 @@ export function useAuth() {
     };
   }, [user]);
 
-  return { session, user, usuario, perfil, isAdmin, loading };
+  return { session, user, usuario, perfil, isAdmin, loading, profileLoading };
 }

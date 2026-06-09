@@ -23,10 +23,13 @@ function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
+  const [meuId, setMeuId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
 
   const carregar = async () => {
     setCarregando(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    setMeuId(session?.user.id ?? null);
     const [{ data: us }, { data: pfs }, { data: rs }] = await Promise.all([
       supabase.from("usuarios").select("id, nome, email, ativo, perfil_id").order("nome"),
       supabase.from("perfis").select("id, nome").order("nome"),
@@ -57,6 +60,10 @@ function AdminUsuarios() {
   };
 
   const toggleAtivo = async (u: Usuario) => {
+    if (u.id === meuId && u.ativo) {
+      toast.error("Você não pode desativar a si mesmo");
+      return;
+    }
     const { error } = await supabase.from("usuarios").update({ ativo: !u.ativo }).eq("id", u.id);
     if (error) return toast.error("Erro", { description: error.message });
     toast.success(u.ativo ? "Usuário desativado" : "Usuário ativado");
@@ -65,6 +72,14 @@ function AdminUsuarios() {
 
   const toggleAdmin = async (u: Usuario) => {
     const eraAdmin = adminIds.has(u.id);
+    if (eraAdmin && u.id === meuId) {
+      toast.error("Você não pode remover seu próprio acesso de admin");
+      return;
+    }
+    if (eraAdmin && adminIds.size <= 1) {
+      toast.error("Não é possível remover o último admin do sistema");
+      return;
+    }
     if (eraAdmin) {
       const { error } = await supabase
         .from("user_roles")
