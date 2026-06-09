@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -87,7 +87,12 @@ function LoginPage() {
             {carregando ? "Entrando..." : "Entrar"}
           </button>
 
-          <p className="pt-4 text-center text-xs text-muted-foreground">
+          <p className="pt-2 text-center">
+            <Link to="/forgot-password" className="text-xs uppercase tracking-widest text-muted-foreground hover:text-primary">
+              Esqueci minha senha
+            </Link>
+          </p>
+          <p className="pt-2 text-center text-xs text-muted-foreground">
             Acesso restrito · somente por convite do administrador
           </p>
         </form>
