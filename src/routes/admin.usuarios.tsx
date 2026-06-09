@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Shield, ShieldOff } from "lucide-react";
+import { ArrowLeft, Shield, ShieldOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { inviteUser } from "@/lib/admin-invite.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: AdminUsuarios,
@@ -25,6 +27,33 @@ function AdminUsuarios() {
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
   const [meuId, setMeuId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteNome, setInviteNome] = useState("");
+  const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const invite = useServerFn(inviteUser);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail || !inviteNome) return;
+    setEnviandoConvite(true);
+    try {
+      await invite({
+        data: {
+          email: inviteEmail.trim(),
+          nome: inviteNome.trim(),
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      });
+      toast.success("Convite enviado", { description: `Email enviado para ${inviteEmail}` });
+      setInviteEmail("");
+      setInviteNome("");
+      carregar();
+    } catch (err) {
+      toast.error("Falha ao convidar", { description: (err as Error).message });
+    } finally {
+      setEnviandoConvite(false);
+    }
+  };
 
   const carregar = async () => {
     setCarregando(true);
@@ -115,7 +144,37 @@ function AdminUsuarios() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md space-y-2 px-6 pt-4">
+      <div className="mx-auto max-w-md space-y-4 px-6 pt-4">
+        <form onSubmit={handleInvite} className="rounded-xl border border-border bg-card px-4 py-3 space-y-2">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+            <UserPlus size={14} /> Convidar usuário
+          </p>
+          <input
+            type="text"
+            required
+            placeholder="Nome"
+            value={inviteNome}
+            onChange={(e) => setInviteNome(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+          />
+          <input
+            type="email"
+            required
+            placeholder="email@exemplo.com"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+          />
+          <button
+            type="submit"
+            disabled={enviandoConvite}
+            className="w-full rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+          >
+            {enviandoConvite ? "Enviando..." : "Enviar convite"}
+          </button>
+        </form>
+
+
         {carregando ? (
           <p className="py-12 text-center text-sm text-muted-foreground">Carregando...</p>
         ) : (
