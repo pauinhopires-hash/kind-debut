@@ -144,7 +144,37 @@ function AdminUsuarios() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md space-y-2 px-6 pt-4">
+      <div className="mx-auto max-w-md space-y-4 px-6 pt-4">
+        <form onSubmit={handleInvite} className="rounded-xl border border-border bg-card px-4 py-3 space-y-2">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+            <UserPlus size={14} /> Convidar usuário
+          </p>
+          <input
+            type="text"
+            required
+            placeholder="Nome"
+            value={inviteNome}
+            onChange={(e) => setInviteNome(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+          />
+          <input
+            type="email"
+            required
+            placeholder="email@exemplo.com"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+          />
+          <button
+            type="submit"
+            disabled={enviandoConvite}
+            className="w-full rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+          >
+            {enviandoConvite ? "Enviando..." : "Enviar convite"}
+          </button>
+        </form>
+
+
         {carregando ? (
           <p className="py-12 text-center text-sm text-muted-foreground">Carregando...</p>
         ) : (
