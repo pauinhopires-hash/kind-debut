@@ -1,65 +1,86 @@
-## Auditoria de Estabilização — Produção Amanhã
+## Checklist "Pronto para Produção" — Validação Amanhã
 
-Sem novas funcionalidades. Apenas correções para destravar o uso real.
-
----
-
-### BLOQUEADORES (app quebra sem isso)
-
-**B-1. Trigger `on_auth_user_created` ausente em `auth.users`**
-A função `handle_new_user()` existe mas não há trigger. Usuários novos (convite/signup) não recebem linha em `public.usuarios` → `useAuth` quebra, RLS nega tudo, telas ficam em branco.
-- Correção: migração criando `CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();` + trigger `grant_first_admin` + backfill `INSERT INTO usuarios … SELECT FROM auth.users ON CONFLICT DO NOTHING`.
-
-**B-2. Filtro de setor em `admin.lista-compras.tsx` não casa com `produtos.setor`**
-A lista hard-codeia setores diferentes dos definidos em `admin.produtos.tsx`. Qualquer filtro esvazia a lista de compras.
-- Correção: derivar setores via `SELECT DISTINCT setor FROM produtos` ou reutilizar a constante `SETORES` central.
-
-**B-3. Status `"comprada"` órfão**
-`admin.lista-compras.tsx` grava status `"comprada"` em requisições, mas `admin.requisicoes.tsx` e `historico.tsx` só reconhecem `pendente|aprovada|cancelada`. Pedidos somem do histórico após compra.
-- Correção: padronizar fechamento como `aprovada` (já reconhecido em todas as telas).
+Estado atual: bloqueadores e graves já corrigidos. Itens menores opcionais listados ao final.
 
 ---
 
-### GRAVES (vazam dados ou corrompem estoque)
+### A. INFRAESTRUTURA DE BANCO — concluído
 
-**G-1. `pedido.tsx` → `repetirUltimo` sem filtro de `usuario_id`**
-Usuário pode repetir o último pedido de qualquer outro usuário.
-- Correção: adicionar `.eq("usuario_id", user.id)` na query.
+- [x] **Trigger `on_auth_user_created`** ativo em `auth.users` (verificado em `pg_trigger`)
+- [x] **Trigger `on_auth_user_created_role`** ativo em `auth.users`
+- [x] **Backfill**: `auth.users=1`, `public.usuarios=1`, `public.user_roles=1` (consistente)
+- [x] **Funções SECURITY DEFINER** sem EXECUTE para `anon/authenticated` (`handle_new_user`, `grant_first_admin`, `has_role`, `current_user_perfil_id`, `prevent_non_admin_status_change`)
+- [x] **RLS policies novas** (auditoria de segurança):
+  - `usuarios_admin_delete` — só admin deleta usuário
+  - `config_insert_admin` / `config_update_admin` / `config_delete_admin`
+  - `own or admin update ri` exige `status='pendente'` para o dono
 
-**G-2. `admin.estoque.tsx` edita quantidade sem registrar movimentação**
-Upsert direto em `estoque_atual` quebra a auditoria de `movimentacoes_estoque`.
-- Correção: ler saldo atual → inserir `movimentacoes_estoque` tipo `ajuste` → upsert.
-
-**G-3. `index.tsx` usa `.single()` para buscar nome do usuário**
-Se a linha em `usuarios` não existir (cenário B-1 ou legado), a home crasha.
-- Correção: trocar por `.maybeSingle()` + fallback no email.
-
-**G-4. Metadados genéricos da Lovable em `__root.tsx`**
-Título, OG e descrição padrão "Lovable" — inadequado para produção.
-- Correção: atualizar `<title>`, `meta description`, OG/Twitter para "Misturaria Fina Mezcla".
+**Como validar amanhã:**
+1. Convidar 1 usuário novo via painel de auth → confirmar que aparece em `usuarios` e `user_roles` automaticamente
+2. Logar como usuário comum → tentar deletar outro usuário (deve falhar com permission denied)
+3. Logar como admin → editar `config_sistema` (deve funcionar)
 
 ---
 
-### MENORES (polimento pré-prod)
+### B. FRONTEND — bloqueadores corrigidos
 
-- **M-1.** `admin.tsx` usa `useEffect` para guard → flash de "Carregando" e possível bypass momentâneo. Substituir por `beforeLoad` que valida `has_role`.
-- **M-2.** `admin.requisicoes-internas.tsx` entrega parcial sem rollback transacional — se a 2ª query falhar, estoque fica inconsistente. Mover para RPC `entregar_requisicao_interna` (server-side, atômica).
-- **M-3.** `requisicao-interna.tsx:52` `catch (e: any)` sem tratamento — silencia erros reais.
-- **M-4.** `historico.tsx:188` comparação de status sem `.toLowerCase()` quebra filtros futuros.
+- [x] **Filtro de setor `admin.lista-compras.tsx`** alinhado a `produtos.setor` (`COZINHA`, `ESTOQUE CENTRAL`, `FRENTE`)
+- [x] **Status `"comprada"` → `"aprovada"`** em `fecharDia`, evita pedidos sumindo do histórico
+- [x] **`pedido.tsx → repetirUltimo`** filtra por `usuario_id = user.id`
+- [x] **`admin.estoque.tsx`** registra `movimentacoes_estoque` tipo `ajuste` ao editar quantidade
+- [x] **`index.tsx`** usa `.maybeSingle()` + fallback no email (tolera usuário sem linha em `usuarios`)
+- [x] **`__root.tsx`** metadados "Misturaria Fina Mezcla" em title, OG e Twitter
+- [x] **`requisicao-interna.tsx:52`** tipos corrigidos (sem `any` solto)
+
+**Como validar amanhã (telas):**
+
+| Tela | Rota | Caminho de teste |
+|---|---|---|
+| Home | `/` | Carrega nome do usuário; admin é redirecionado para `/admin` |
+| Login | `/login` | Email + senha; novo usuário cria linha em `usuarios` |
+| Novo pedido | `/pedido` | Adicionar 2 itens, salvar → aparece em `/historico` |
+| Repetir último | `/pedido` botão Repetir | Carrega só os próprios itens |
+| Requisição interna | `/requisicao-interna` | Não permite quantidade > estoque |
+| Histórico compras | `/historico` | Lista status pendente/aprovada/cancelada |
+| Histórico interno | `/historico-interno` | Lista só do próprio usuário |
+| Dashboard admin | `/admin` | Acesso negado para não-admin |
+| Lista de compras | `/admin/lista-compras` | Filtro por setor não esvazia; "Marcar tudo" usa `aprovada` |
+| Produtos | `/admin/produtos` | CRUD funciona, setores `COZINHA`/`ESTOQUE CENTRAL`/`FRENTE` |
+| Estoque | `/admin/estoque` | Salvar quantidade gera linha em `movimentacoes_estoque` (tipo `ajuste`) |
+| Requisições | `/admin/requisicoes` | Aprovar/cancelar muda status |
+| Requisições internas | `/admin/requisicoes-internas` | Entregar debita estoque e registra movimentação |
+| Movimentações | `/admin/movimentacoes` | Mostra entradas/saídas/ajustes |
+| Usuários | `/admin/usuarios` | Listar e atribuir papéis |
+| Exportar | `/exportar` | CSV gerado com dados do próprio usuário |
 
 ---
 
-### FORA DE ESCOPO (não tocar agora)
-- Novas funcionalidades
-- Refator de `src/routes/` para `_authenticated/`
-- Mudanças de design
-- Arquivos auto-gerados (`src/integrations/supabase/*`)
+### C. ITENS MENORES — não bloqueiam produção, mas recomendados
+
+- [ ] **M-1** `admin.tsx` guard via `useEffect` causa flash de "Carregando" — funciona, mas ideal mover para `beforeLoad` com `has_role`
+- [ ] **M-2** `admin.requisicoes-internas.tsx`: entrega parcial sem rollback transacional. Risco: se a 2ª query falhar entre debitar estoque e atualizar status, fica inconsistente. Mitigação completa requer RPC server-side
+- [ ] **M-4** `historico.tsx:188` exibe status sem normalizar caixa — só cosmético
+
+**Aceitar/postpor:** estes 3 não impedem produção. Se algum surgir como problema real no uso, criar tarefa específica.
 
 ---
 
-### Ordem de execução proposta
-1. Migração SQL: trigger `handle_new_user` + `grant_first_admin` + backfill (B-1)
-2. Frontend: B-2, B-3, G-1, G-2, G-3, G-4
-3. Polimento: M-1 a M-4
+### D. CHECAGEM FINAL ANTES DO DEPLOY
 
-Aprovação para executar nesta ordem?
+- [ ] Build sem erros TypeScript (rodar `bun run build` ou aguardar pipeline)
+- [ ] Smoke test: criar 1 pedido, aprovar, fechar dia, ver no histórico
+- [ ] Smoke test: criar 1 requisição interna, entregar como admin, conferir movimentação
+- [ ] Verificar `/login` aceita email/senha do convite enviado
+- [ ] Confirmar que metadados aparecem ao compartilhar link (OG image carrega)
+
+---
+
+### Evidências de migrations executadas
+
+```
+2026-06-09  triggers handle_new_user + grant_first_admin + backfill usuarios/user_roles
+2026-06-09  REVOKE EXECUTE em todas as SECURITY DEFINER de anon/authenticated
+2026-06-09  policies: usuarios_admin_delete, config_*_admin, requisicoes_internas status guard
+```
+
+Próximo passo: marcar checkboxes da seção D amanhã durante o smoke test.
