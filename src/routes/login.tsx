@@ -32,7 +32,11 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
     setCarregando(false);
     if (error) {
-      setErro("Email ou senha inválidos.");
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed")) setErro("Email ainda não confirmado. Verifique sua caixa de entrada.");
+      else if (msg.includes("invalid login")) setErro("Email ou senha inválidos.");
+      else if (msg.includes("rate limit")) setErro("Muitas tentativas. Aguarde alguns minutos.");
+      else setErro(error.message);
       return;
     }
     navigate({ to: "/" });
