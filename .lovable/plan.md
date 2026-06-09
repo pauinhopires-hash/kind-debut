@@ -1,86 +1,53 @@
-## Checklist "Pronto para Produção" — Validação Amanhã
+## Auditoria — Login & Usuários
 
-Estado atual: bloqueadores e graves já corrigidos. Itens menores opcionais listados ao final.
+### Diagnóstico (estado atual)
 
----
-
-### A. INFRAESTRUTURA DE BANCO — concluído
-
-- [x] **Trigger `on_auth_user_created`** ativo em `auth.users` (verificado em `pg_trigger`)
-- [x] **Trigger `on_auth_user_created_role`** ativo em `auth.users`
-- [x] **Backfill**: `auth.users=1`, `public.usuarios=1`, `public.user_roles=1` (consistente)
-- [x] **Funções SECURITY DEFINER** sem EXECUTE para `anon/authenticated` (`handle_new_user`, `grant_first_admin`, `has_role`, `current_user_perfil_id`, `prevent_non_admin_status_change`)
-- [x] **RLS policies novas** (auditoria de segurança):
-  - `usuarios_admin_delete` — só admin deleta usuário
-  - `config_insert_admin` / `config_update_admin` / `config_delete_admin`
-  - `own or admin update ri` exige `status='pendente'` para o dono
-
-**Como validar amanhã:**
-1. Convidar 1 usuário novo via painel de auth → confirmar que aparece em `usuarios` e `user_roles` automaticamente
-2. Logar como usuário comum → tentar deletar outro usuário (deve falhar com permission denied)
-3. Logar como admin → editar `config_sistema` (deve funcionar)
-
----
-
-### B. FRONTEND — bloqueadores corrigidos
-
-- [x] **Filtro de setor `admin.lista-compras.tsx`** alinhado a `produtos.setor` (`COZINHA`, `ESTOQUE CENTRAL`, `FRENTE`)
-- [x] **Status `"comprada"` → `"aprovada"`** em `fecharDia`, evita pedidos sumindo do histórico
-- [x] **`pedido.tsx → repetirUltimo`** filtra por `usuario_id = user.id`
-- [x] **`admin.estoque.tsx`** registra `movimentacoes_estoque` tipo `ajuste` ao editar quantidade
-- [x] **`index.tsx`** usa `.maybeSingle()` + fallback no email (tolera usuário sem linha em `usuarios`)
-- [x] **`__root.tsx`** metadados "Misturaria Fina Mezcla" em title, OG e Twitter
-- [x] **`requisicao-interna.tsx:52`** tipos corrigidos (sem `any` solto)
-
-**Como validar amanhã (telas):**
-
-| Tela | Rota | Caminho de teste |
-|---|---|---|
-| Home | `/` | Carrega nome do usuário; admin é redirecionado para `/admin` |
-| Login | `/login` | Email + senha; novo usuário cria linha em `usuarios` |
-| Novo pedido | `/pedido` | Adicionar 2 itens, salvar → aparece em `/historico` |
-| Repetir último | `/pedido` botão Repetir | Carrega só os próprios itens |
-| Requisição interna | `/requisicao-interna` | Não permite quantidade > estoque |
-| Histórico compras | `/historico` | Lista status pendente/aprovada/cancelada |
-| Histórico interno | `/historico-interno` | Lista só do próprio usuário |
-| Dashboard admin | `/admin` | Acesso negado para não-admin |
-| Lista de compras | `/admin/lista-compras` | Filtro por setor não esvazia; "Marcar tudo" usa `aprovada` |
-| Produtos | `/admin/produtos` | CRUD funciona, setores `COZINHA`/`ESTOQUE CENTRAL`/`FRENTE` |
-| Estoque | `/admin/estoque` | Salvar quantidade gera linha em `movimentacoes_estoque` (tipo `ajuste`) |
-| Requisições | `/admin/requisicoes` | Aprovar/cancelar muda status |
-| Requisições internas | `/admin/requisicoes-internas` | Entregar debita estoque e registra movimentação |
-| Movimentações | `/admin/movimentacoes` | Mostra entradas/saídas/ajustes |
-| Usuários | `/admin/usuarios` | Listar e atribuir papéis |
-| Exportar | `/exportar` | CSV gerado com dados do próprio usuário |
-
----
-
-### C. ITENS MENORES — não bloqueiam produção, mas recomendados
-
-- [ ] **M-1** `admin.tsx` guard via `useEffect` causa flash de "Carregando" — funciona, mas ideal mover para `beforeLoad` com `has_role`
-- [ ] **M-2** `admin.requisicoes-internas.tsx`: entrega parcial sem rollback transacional. Risco: se a 2ª query falhar entre debitar estoque e atualizar status, fica inconsistente. Mitigação completa requer RPC server-side
-- [ ] **M-4** `historico.tsx:188` exibe status sem normalizar caixa — só cosmético
-
-**Aceitar/postpor:** estes 3 não impedem produção. Se algum surgir como problema real no uso, criar tarefa específica.
-
----
-
-### D. CHECAGEM FINAL ANTES DO DEPLOY
-
-- [ ] Build sem erros TypeScript (rodar `bun run build` ou aguardar pipeline)
-- [ ] Smoke test: criar 1 pedido, aprovar, fechar dia, ver no histórico
-- [ ] Smoke test: criar 1 requisição interna, entregar como admin, conferir movimentação
-- [ ] Verificar `/login` aceita email/senha do convite enviado
-- [ ] Confirmar que metadados aparecem ao compartilhar link (OG image carrega)
-
----
-
-### Evidências de migrations executadas
-
+**🔴 BLOQUEADOR ATIVO AGORA** — visível no log de rede:
 ```
-2026-06-09  triggers handle_new_user + grant_first_admin + backfill usuarios/user_roles
-2026-06-09  REVOKE EXECUTE em todas as SECURITY DEFINER de anon/authenticated
-2026-06-09  policies: usuarios_admin_delete, config_*_admin, requisicoes_internas status guard
+POST /rpc/has_role → 403 "permission denied for function has_role"
 ```
+Em `src/routes/index.tsx:25` e `src/routes/admin.tsx:22` o app chama `supabase.rpc("has_role", …)` diretamente do cliente. Na auditoria de segurança anterior, revoguei `EXECUTE` de `has_role` para `authenticated` — isso quebrou a home e o gate do admin. Resultado: **nenhum usuário consegue passar da tela inicial.**
 
-Próximo passo: marcar checkboxes da seção D amanhã durante o smoke test.
+**Outros problemas relevantes:**
+
+1. **Sem fluxo de recuperação de senha.** Login só aceita "Email + senha"; não existe `/forgot-password` nem `/reset-password`. Se um usuário esquecer a senha, só o admin via painel do Cloud consegue resetar.
+2. **Sem cadastro/convite na UI.** `admin.usuarios.tsx` lista, ativa/desativa e promove admin, mas não convida novos usuários. O fluxo "somente por convite" depende 100% do painel do Lovable Cloud.
+3. **Risco de auto-bloqueio do admin.** `toggleAdmin` e `toggleAtivo` em `admin.usuarios.tsx` permitem o admin remover o próprio papel ou se desativar — possível ficar sem nenhum admin no sistema.
+4. **`useAuth` sem flag de loading do perfil/role.** O segundo `useEffect` carrega `usuario`, `perfil` e `isAdmin` async, mas `loading` já é `false` depois do `getSession`. Consumidores que decidem com base em `isAdmin` veem `false` por alguns ms (potencial flash de redirecionamento errado).
+5. **`onAuthStateChange` em `useAuth` não invalida o router.** Após `signOut` em uma página, rotas carregadas continuam mostrando dados em cache até navegação manual.
+6. **`login.tsx` mostra mensagem genérica para qualquer erro** ("Email ou senha inválidos") — esconde casos como "Email não confirmado" ou "Usuário desativado".
+7. **Sessão hidratada via `getSession()` sem revalidar com `getUser()`.** Se o token foi invalidado no servidor (admin removeu o usuário), o cliente segue logado até o próximo refresh.
+
+---
+
+### BLOCO ÚNICO DE AÇÕES PARA PRODUÇÃO
+
+> Todas as correções abaixo são **estabilização** (não adicionam feature nova). Sem implementação agora — só aprovação.
+
+#### A. Banco (1 migração)
+- Restaurar `GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated;`. Justificativa: `has_role` é `SECURITY DEFINER STABLE` que só faz SELECT em `user_roles` pelo `_user_id` recebido — não vaza nada quando chamada com `auth.uid()`. É o padrão recomendado da Supabase e é usado em todas as policies do projeto.
+- Criar função `public.is_current_user_admin()` (`SECURITY DEFINER`, sem parâmetros, retorna `boolean`) chamando `has_role(auth.uid(), 'admin')`. Substitui o uso do RPC parametrizado pelo cliente (mais seguro: não aceita `_user_id` arbitrário) — opcional, se quisermos máximo rigor.
+
+#### B. Frontend (mínimas correções)
+- `src/routes/index.tsx` e `src/routes/admin.tsx`: trocar `supabase.rpc("has_role", …)` por consulta direta a `user_roles` filtrando `auth.uid()` **OU** pela nova `is_current_user_admin()`. Decisão fica em "Decisões pendentes" abaixo.
+- `src/hooks/use-auth.ts`: adicionar `profileLoading` separado de `loading` (sessão). Componentes que dependem de `isAdmin` esperam `!profileLoading`.
+- `src/routes/admin.usuarios.tsx`: impedir o usuário logado de remover o próprio admin / se desativar (verificação no clique + toast explicativo).
+- `src/routes/login.tsx`: tratar erros específicos ("Email not confirmed", "Invalid login credentials") com mensagens claras em PT-BR; adicionar link "Esqueci a senha".
+- Criar `src/routes/forgot-password.tsx` (envia `resetPasswordForEmail` com `redirectTo` para `/reset-password`).
+- Criar `src/routes/reset-password.tsx` (lê `type=recovery` do hash, chama `updateUser({ password })`).
+- `__root.tsx`: registrar `supabase.auth.onAuthStateChange` para chamar `router.invalidate()` em `SIGNED_IN`/`SIGNED_OUT`.
+
+#### C. Configuração do Cloud (manual ou via tool)
+- Habilitar **HIBP (leaked password check)** — bloqueia senhas vazadas.
+- Manter `auto_confirm_email = false` e `disable_signup = true` (acesso só por convite).
+
+---
+
+### Decisões pendentes (preciso de resposta antes de codar)
+
+1. **`has_role`**: prefere (a) re-conceder EXECUTE para `authenticated` — mais simples, padrão da Supabase, OU (b) criar `is_current_user_admin()` e usar essa função no cliente — mais restritivo?
+2. **Esqueci a senha**: posso criar `/forgot-password` + `/reset-password`? (Você disse "sem novas funcionalidades" — confirmo se esse fluxo entra como estabilização básica ou se prefere adiar e instruir admins a resetarem manualmente no painel.)
+3. **Convite na UI (admin.usuarios.tsx)**: deixo como está (só painel do Cloud) ou adiciono botão "Convidar por email"? Recomendo deixar como está para hoje — o trigger `handle_new_user` já popula `usuarios` automaticamente quando o convite é aceito.
+4. **HIBP**: ativo agora?
+
+Sem essas respostas só posso garantir a correção do bloqueador A+B (re-grant `has_role` + ajuste de `useAuth`/`login`/`admin.usuarios`).
