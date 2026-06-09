@@ -81,6 +81,60 @@ function AdminRequisicoes() {
     carregar();
   };
 
+  const recarregarItens = async (reqId: string) => {
+    const { data } = await supabase
+      .from("requisicao_itens")
+      .select("id, quantidade, produtos(nome, unidade)")
+      .eq("requisicao_id", reqId);
+    setItens((prev) => ({ ...prev, [reqId]: (data ?? []) as unknown as Item[] }));
+  };
+
+  const atualizarQtd = async (reqId: string, itemId: string, novaQtd: number) => {
+    if (novaQtd <= 0) return;
+    // otimista
+    setItens((prev) => ({
+      ...prev,
+      [reqId]: (prev[reqId] ?? []).map((i) => (i.id === itemId ? { ...i, quantidade: novaQtd } : i)),
+    }));
+    const { error } = await supabase
+      .from("requisicao_itens")
+      .update({ quantidade: novaQtd })
+      .eq("id", itemId);
+    if (error) {
+      toast.error("Erro ao atualizar", { description: error.message });
+      recarregarItens(reqId);
+    }
+  };
+
+  const excluirItem = async (reqId: string, itemId: string, nome: string) => {
+    if (!confirm(`Excluir "${nome}" da requisição?`)) return;
+    const { error } = await supabase.from("requisicao_itens").delete().eq("id", itemId);
+    if (error) return toast.error("Erro ao excluir", { description: error.message });
+    toast.success("Item excluído");
+    recarregarItens(reqId);
+  };
+
+  const compartilharWhatsApp = (r: Req) => {
+    const lista = itens[r.id] ?? [];
+    if (lista.length === 0) return toast.error("Sem itens para compartilhar");
+    const linhas = lista.map(
+      (it) => `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${it.produtos?.unidade ?? ""}`.trim(),
+    );
+    const texto = [
+      `*Requisição de Compra*`,
+      `Solicitante: ${r.usuarios?.nome ?? "—"}`,
+      `Data: ${formatar(r.created_at)}`,
+      ``,
+      ...linhas,
+      r.observacao ? `\nObs: ${r.observacao}` : ``,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
+  };
+
+
   const filtros: { id: Filtro; label: string }[] = [
     { id: "pendente", label: "Pendentes" },
     { id: "aprovada", label: "Aprovadas" },
