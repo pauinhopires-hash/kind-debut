@@ -54,10 +54,12 @@ function HistoricoPage() {
   }, [loading, user, navigate]);
 
   const carregar = async () => {
+    if (!user) return;
     setCarregando(true);
     const { data, error } = await supabase
       .from("requisicoes")
       .select("id, status, observacao, created_at")
+      .eq("usuario_id", user.id)
       .order("created_at", { ascending: false });
     if (error) setErro(error.message);
     setReqs((data ?? []) as Requisicao[]);

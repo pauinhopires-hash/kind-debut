@@ -50,6 +50,7 @@ function ExportarPage() {
       const { data: req, error: e1 } = await supabase
         .from("requisicoes")
         .select("id, observacao, created_at")
+        .eq("usuario_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
