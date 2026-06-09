@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Shield, ShieldOff } from "lucide-react";
+import { ArrowLeft, Shield, ShieldOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { inviteUser } from "@/lib/admin-invite.functions";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: AdminUsuarios,

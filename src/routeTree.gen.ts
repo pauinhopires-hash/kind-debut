@@ -9,11 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RequisicaoInternaRouteImport } from './routes/requisicao-interna'
 import { Route as PedidoRouteImport } from './routes/pedido'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoricoInternoRouteImport } from './routes/historico-interno'
 import { Route as HistoricoRouteImport } from './routes/historico'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ExportarRouteImport } from './routes/exportar'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -27,6 +29,11 @@ import { Route as AdminListaComprasRouteImport } from './routes/admin.lista-comp
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequisicaoInternaRoute = RequisicaoInternaRouteImport.update({
   id: '/requisicao-interna',
   path: '/requisicao-interna',
@@ -50,6 +57,11 @@ const HistoricoInternoRoute = HistoricoInternoRouteImport.update({
 const HistoricoRoute = HistoricoRouteImport.update({
   id: '/historico',
   path: '/historico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExportarRoute = ExportarRouteImport.update({
@@ -118,11 +130,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/exportar': typeof ExportarRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/historico': typeof HistoricoRoute
   '/historico-interno': typeof HistoricoInternoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRouteWithChildren
   '/requisicao-interna': typeof RequisicaoInternaRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
@@ -136,11 +150,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/exportar': typeof ExportarRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/historico': typeof HistoricoRoute
   '/historico-interno': typeof HistoricoInternoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRouteWithChildren
   '/requisicao-interna': typeof RequisicaoInternaRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
@@ -156,11 +172,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/exportar': typeof ExportarRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/historico': typeof HistoricoRoute
   '/historico-interno': typeof HistoricoInternoRoute
   '/login': typeof LoginRoute
   '/pedido': typeof PedidoRouteWithChildren
   '/requisicao-interna': typeof RequisicaoInternaRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
@@ -177,11 +195,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/exportar'
+    | '/forgot-password'
     | '/historico'
     | '/historico-interno'
     | '/login'
     | '/pedido'
     | '/requisicao-interna'
+    | '/reset-password'
     | '/admin/estoque'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
@@ -195,11 +215,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/exportar'
+    | '/forgot-password'
     | '/historico'
     | '/historico-interno'
     | '/login'
     | '/pedido'
     | '/requisicao-interna'
+    | '/reset-password'
     | '/admin/estoque'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
@@ -214,11 +236,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/exportar'
+    | '/forgot-password'
     | '/historico'
     | '/historico-interno'
     | '/login'
     | '/pedido'
     | '/requisicao-interna'
+    | '/reset-password'
     | '/admin/estoque'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
@@ -234,15 +258,24 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   ExportarRoute: typeof ExportarRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   HistoricoRoute: typeof HistoricoRoute
   HistoricoInternoRoute: typeof HistoricoInternoRoute
   LoginRoute: typeof LoginRoute
   PedidoRoute: typeof PedidoRouteWithChildren
   RequisicaoInternaRoute: typeof RequisicaoInternaRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/requisicao-interna': {
       id: '/requisicao-interna'
       path: '/requisicao-interna'
@@ -276,6 +309,13 @@ declare module '@tanstack/react-router' {
       path: '/historico'
       fullPath: '/historico'
       preLoaderRoute: typeof HistoricoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exportar': {
@@ -404,11 +444,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   ExportarRoute: ExportarRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   HistoricoRoute: HistoricoRoute,
   HistoricoInternoRoute: HistoricoInternoRoute,
   LoginRoute: LoginRoute,
   PedidoRoute: PedidoRouteWithChildren,
   RequisicaoInternaRoute: RequisicaoInternaRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
