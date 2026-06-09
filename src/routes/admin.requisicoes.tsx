@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, XCircle } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Minus, Plus, Share2, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
