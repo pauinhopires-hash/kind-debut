@@ -107,6 +107,11 @@ function AdminRequisicoes() {
       </header>
 
       <div className="mx-auto max-w-md px-6 pt-4">
+        <p className="mb-3 rounded-md border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground">
+          Requisições aprovadas continuam aparecendo na <span className="font-semibold text-foreground">Lista de Compras</span> até serem marcadas como compradas.
+        </p>
+
+
         <div className="mb-3 flex gap-1 overflow-x-auto">
           {filtros.map((f) => (
             <button
