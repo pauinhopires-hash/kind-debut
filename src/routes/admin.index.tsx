@@ -93,6 +93,14 @@ function AdminDashboard() {
       group: "Compras",
       items: [
         {
+          label: "Nova Requisição de Compra",
+          descricao: "Criar novo pedido de compra",
+          icon: ShoppingCart,
+          rota: "/pedido" as const,
+          badge: 0,
+          cor: "bg-orange-500",
+        },
+        {
           label: "Requisições de Compra",
           descricao: "Aprovar pedidos da equipe",
           icon: ShoppingCart,
