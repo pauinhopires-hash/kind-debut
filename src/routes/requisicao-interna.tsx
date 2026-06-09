@@ -49,12 +49,13 @@ function RequisicaoInterna() {
       .select("quantidade, produto_id, produtos(id, nome, unidade)")
       .gt("quantidade", 0);
     if (error) { toast.error("Erro ao carregar produtos"); return; }
-    const lista: Produto[] = (data || []).map((e: any) => ({
+    type Row = { produto_id: string; quantidade: number; produtos: { nome: string; unidade: string } | null };
+    const lista: Produto[] = ((data ?? []) as unknown as Row[]).map((e) => ({
       id: e.produto_id,
-      nome: e.produtos?.nome || "",
-      unidade: e.produtos?.unidade || "",
-      estoque_disponivel: e.quantidade,
-    })).sort((a: Produto, b: Produto) => a.nome.localeCompare(b.nome));
+      nome: e.produtos?.nome ?? "",
+      unidade: e.produtos?.unidade ?? "",
+      estoque_disponivel: Number(e.quantidade),
+    })).sort((a, b) => a.nome.localeCompare(b.nome));
     setProdutos(lista);
   };
 

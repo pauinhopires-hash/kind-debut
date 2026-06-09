@@ -225,10 +225,10 @@ function AdminListaCompras() {
         return;
       }
 
-      const { error: e2 } = await supabase.from("requisicoes").update({ status: "comprada" }).in("id", ids);
+      const { error: e2 } = await supabase.from("requisicoes").update({ status: "aprovada" }).in("id", ids);
 
       if (e2) throw e2;
-      toast.success(`${ids.length} requisição(ões) fechadas como "comprada"`);
+      toast.success(`${ids.length} requisição(ões) fechadas como "aprovada"`);
       await carregar();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -299,10 +299,9 @@ function AdminListaCompras() {
             className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
           >
             <option value="todos">Todos os setores</option>
-            <option value="Cozinha">Cozinha</option>
-            <option value="Salão">Salão</option>
-            <option value="Copa">Copa</option>
-            <option value="Caixa">Caixa</option>
+            <option value="COZINHA">COZINHA</option>
+            <option value="ESTOQUE CENTRAL">ESTOQUE CENTRAL</option>
+            <option value="FRENTE">FRENTE</option>
           </select>
           <input
             placeholder="Buscar produto..."

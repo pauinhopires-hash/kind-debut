@@ -82,6 +82,7 @@ function PedidoPage() {
     const { data: req } = await supabase
       .from("requisicoes")
       .select("id")
+      .eq("usuario_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

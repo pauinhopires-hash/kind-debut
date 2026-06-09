@@ -66,16 +66,49 @@ function AdminEstoque() {
 
   const salvar = async (l: Linha) => {
     setSalvando(l.produto_id);
-    const [{ error: e1 }, { error: e2 }] = await Promise.all([
-      supabase.from("estoque_atual").upsert({ produto_id: l.produto_id, quantidade: l.quantidade }),
-      supabase.from("produtos").update({ estoque_minimo: l.estoque_minimo }).eq("id", l.produto_id),
-    ]);
-    setSalvando(null);
-    if (e1 || e2)
-      toast.error("Erro ao salvar", {
-        description: (e1 ?? e2)?.message,
-      });
-    else toast.success(`${l.nome} salvo`);
+    try {
+      // Lê estoque atual para registrar a movimentação de ajuste
+      const { data: estRow } = await supabase
+        .from("estoque_atual")
+        .select("quantidade")
+        .eq("produto_id", l.produto_id)
+        .maybeSingle();
+      const estoqueAntes = estRow ? Number(estRow.quantidade) : 0;
+      const estoqueDepois = l.quantidade;
+      const delta = estoqueDepois - estoqueAntes;
+
+      const { error: e1 } = await supabase
+        .from("estoque_atual")
+        .upsert({ produto_id: l.produto_id, quantidade: estoqueDepois });
+      if (e1) throw e1;
+
+      const { error: e2 } = await supabase
+        .from("produtos")
+        .update({ estoque_minimo: l.estoque_minimo })
+        .eq("id", l.produto_id);
+      if (e2) throw e2;
+
+      if (delta !== 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const { error: eMov } = await supabase.from("movimentacoes_estoque").insert({
+          tipo: "ajuste",
+          produto_id: l.produto_id,
+          quantidade: Math.abs(delta),
+          estoque_antes: estoqueAntes,
+          estoque_depois: estoqueDepois,
+          usuario_id: session?.user.id ?? null,
+          observacao: `Ajuste manual de estoque (${delta > 0 ? "+" : ""}${delta})`,
+        });
+        if (eMov) throw eMov;
+      }
+
+      toast.success(`${l.nome} salvo`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao salvar", { description: msg });
+    } finally {
+      setSalvando(null);
+    }
   };
 
   const filtradas = linhas.filter((l) => l.nome.toLowerCase().includes(busca.toLowerCase()));
