@@ -27,6 +27,33 @@ function AdminUsuarios() {
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
   const [meuId, setMeuId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteNome, setInviteNome] = useState("");
+  const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const invite = useServerFn(inviteUser);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail || !inviteNome) return;
+    setEnviandoConvite(true);
+    try {
+      await invite({
+        data: {
+          email: inviteEmail.trim(),
+          nome: inviteNome.trim(),
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      });
+      toast.success("Convite enviado", { description: `Email enviado para ${inviteEmail}` });
+      setInviteEmail("");
+      setInviteNome("");
+      carregar();
+    } catch (err) {
+      toast.error("Falha ao convidar", { description: (err as Error).message });
+    } finally {
+      setEnviandoConvite(false);
+    }
+  };
 
   const carregar = async () => {
     setCarregando(true);
