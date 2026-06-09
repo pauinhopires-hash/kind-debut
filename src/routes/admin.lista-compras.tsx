@@ -48,17 +48,13 @@ function AdminListaCompras() {
           comprado,
           comprado_em,
           produto_id,
-          produtos (id, nome, unidade, grupo),
-          requisicoes!inner (id, status, data_pedido, setor)
+          produtos (id, nome, unidade, grupo, setor),
+          requisicoes!inner (id, status, created_at)
         `,
         )
         .eq("requisicoes.status", "pendente")
-        .gte("requisicoes.data_pedido", `${data}T00:00:00`)
-        .lte("requisicoes.data_pedido", `${data}T23:59:59`);
-
-      if (setor !== "todos") {
-        query = query.eq("requisicoes.setor", setor);
-      }
+        .gte("requisicoes.created_at", `${data}T00:00:00`)
+        .lte("requisicoes.created_at", `${data}T23:59:59`);
 
       const { data: itens, error: e1 } = await query;
       const { data: estoqueRows, error: e2 } = await supabase.from("estoque_atual").select("produto_id, quantidade");
@@ -81,9 +77,12 @@ function AdminListaCompras() {
           id: string;
           nome: string;
           unidade: string;
-          grupo: string;
+          grupo: string | null;
+          setor: string | null;
         } | null;
         if (!prod) continue;
+        // Filtro de setor (vem do produto)
+        if (setor !== "todos" && prod.setor !== setor) continue;
         const pid = prod.id;
         if (!mapProduto[pid]) {
           const est = mapEstoque[pid] ?? 0;
@@ -153,29 +152,49 @@ function AdminListaCompras() {
     const novoComprado = !it.comprado;
 
     try {
+      // Re-lê estoque atual para evitar stale data
+      const { data: estRow, error: errEst } = await supabase
+        .from("estoque_atual")
+        .select("quantidade")
+        .eq("produto_id", it.produto_id)
+        .maybeSingle();
+      if (errEst) throw errEst;
+      const estoqueAntes = estRow ? Number(estRow.quantidade) : 0;
+
+      // Quando marcando, soma aComprar; quando desmarcando, subtrai
+      const delta = novoComprado ? it.aComprar : -it.aComprar;
+      const estoqueDepois = Math.max(0, estoqueAntes + delta);
+
       // 1. Atualiza requisicao_itens
       const { error: e1 } = await supabase
         .from("requisicao_itens")
         .update({ comprado: novoComprado, comprado_em: novoComprado ? agora : null })
         .in("id", it.item_ids);
-
       if (e1) throw e1;
 
-      // 2. BAIXA AUTOMÁTICA DO ESTOQUE
-      //    Ao marcar como comprado, SOMA aComprar ao estoque_atual
-      if (novoComprado && it.aComprar > 0) {
-        const novaQtd = it.estoque + it.aComprar;
+      if (it.aComprar > 0) {
+        // 2. Atualiza estoque
         const { error: e2 } = await supabase
           .from("estoque_atual")
-          .upsert({ produto_id: it.produto_id, quantidade: novaQtd });
+          .upsert({ produto_id: it.produto_id, quantidade: estoqueDepois });
         if (e2) throw e2;
-      } else if (!novoComprado) {
-        // Desfaz: remove a quantidade que tinha sido somada
-        const novaQtd = Math.max(0, it.estoque - it.aComprar);
-        const { error: e3 } = await supabase
-          .from("estoque_atual")
-          .upsert({ produto_id: it.produto_id, quantidade: novaQtd });
-        if (e3) throw e3;
+
+        // 3. Registra movimentação (entrada quando comprou, ajuste quando desmarcou)
+        const { data: { session } } = await supabase.auth.getSession();
+        const { error: eMov } = await supabase
+          .from("movimentacoes_estoque")
+          .insert({
+            tipo: novoComprado ? "entrada" : "ajuste",
+            produto_id: it.produto_id,
+            quantidade: it.aComprar,
+            estoque_antes: estoqueAntes,
+            estoque_depois: estoqueDepois,
+            usuario_id: session?.user.id ?? null,
+            observacao: novoComprado
+              ? `Compra registrada — lista de compras ${data}`
+              : `Compra desfeita — lista de compras ${data}`,
+          });
+        if (eMov) throw eMov;
       }
 
       toast.success(novoComprado ? `${it.nome} marcado como comprado` : `${it.nome} desmarcado`);
@@ -196,8 +215,8 @@ function AdminListaCompras() {
         .from("requisicoes")
         .select("id")
         .eq("status", "pendente")
-        .gte("data_pedido", `${data}T00:00:00`)
-        .lte("data_pedido", `${data}T23:59:59`);
+        .gte("created_at", `${data}T00:00:00`)
+        .lte("created_at", `${data}T23:59:59`);
 
       if (error) throw error;
       const ids = (reqs ?? []).map((r) => r.id);
