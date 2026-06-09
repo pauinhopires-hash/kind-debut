@@ -139,7 +139,7 @@ function RequisicaoInterna() {
             <option value="">Selecione um produto...</option>
             {produtos.map(p => (
               <option key={p.id} value={p.id}>
-                {p.nome} â disponÃ­vel: {p.estoque_disponivel} {p.unidade}
+                {p.nome} → disponível: {p.estoque_disponivel} {p.unidade}
               </option>
             ))}
           </select>
