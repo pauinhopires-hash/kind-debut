@@ -52,7 +52,7 @@ function AdminListaCompras() {
           requisicoes!inner (id, status, created_at)
         `,
         )
-        .eq("requisicoes.status", "pendente")
+        .in("requisicoes.status", ["pendente", "aprovada"])
         .gte("requisicoes.created_at", `${data}T00:00:00`)
         .lte("requisicoes.created_at", `${data}T23:59:59`);
 
@@ -210,26 +210,16 @@ function AdminListaCompras() {
   const fecharDia = async () => {
     setFechando(true);
     try {
-      // Busca as requisições pendentes do dia
-      const { data: reqs, error } = await supabase
-        .from("requisicoes")
-        .select("id")
-        .eq("status", "pendente")
-        .gte("created_at", `${data}T00:00:00`)
-        .lte("created_at", `${data}T23:59:59`);
-
-      if (error) throw error;
-      const ids = (reqs ?? []).map((r) => r.id);
-      if (ids.length === 0) {
-        toast.info("Nenhuma requisição pendente para fechar.");
+      const pendentes = grupos.flatMap((g) => g.itens.filter((i) => !i.comprado && i.aComprar > 0));
+      if (pendentes.length === 0) {
+        toast.info("Nada para fechar — todos os itens já estão comprados.");
         return;
       }
-
-      const { error: e2 } = await supabase.from("requisicoes").update({ status: "aprovada" }).in("id", ids);
-
-      if (e2) throw e2;
-      toast.success(`${ids.length} requisição(ões) fechadas como "aprovada"`);
-      await carregar();
+      if (!confirm(`Marcar ${pendentes.length} item(ns) como comprado(s)?`)) return;
+      for (const it of pendentes) {
+        await marcarComprado(it);
+      }
+      toast.success(`${pendentes.length} item(ns) fechado(s) como comprado(s).`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Erro ao fechar dia", { description: msg });
@@ -332,7 +322,7 @@ function AdminListaCompras() {
         {carregando ? (
           <p className="text-gray-400 text-sm">Carregando...</p>
         ) : gruposFiltrados.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-12">Nenhuma requisição pendente para este dia/setor.</p>
+          <p className="text-gray-500 text-sm text-center py-12">Nenhuma requisição para este dia/setor.</p>
         ) : (
           <>
             {/* Cabeçalho da tabela */}
