@@ -87,6 +87,7 @@ function RequisicaoInterna() {
 
   const enviarRequisicao = async () => {
     if (itens.length === 0) { toast.error("Adicione ao menos um item"); return; }
+    if (!userId) { toast.error("Sessão expirada"); return; }
     setLoading(true);
     try {
       const { data: req, error: errReq } = await supabase
