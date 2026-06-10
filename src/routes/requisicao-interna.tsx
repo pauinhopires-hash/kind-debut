@@ -1,4 +1,3 @@
-// v2
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Plus, Trash2, Send } from "lucide-react";
@@ -9,19 +8,8 @@ export const Route = createFileRoute("/requisicao-interna")({
   component: RequisicaoInterna,
 });
 
-type Produto = {
-  id: string;
-  nome: string;
-  unidade: string;
-  estoque_disponivel: number;
-};
-
-type ItemRequisicao = {
-  produto_id: string;
-  nome: string;
-  unidade: string;
-  quantidade: number;
-};
+type Produto = { id: string; nome: string; unidade: string; estoque_disponivel: number; };
+type ItemRequisicao = { produto_id: string; nome: string; unidade: string; quantidade: number; };
 
 function RequisicaoInterna() {
   const navigate = useNavigate();
@@ -44,18 +32,17 @@ function RequisicaoInterna() {
   }, []);
 
   const fetchProdutos = async () => {
-    const { data, error } = await supabase
-      .from("estoque_atual")
-      .select("quantidade, produto_id, produtos(id, nome, unidade)")
-      .gt("quantidade", 0);
-    if (error) { toast.error("Erro ao carregar produtos"); return; }
-    type Row = { produto_id: string; quantidade: number; produtos: { nome: string; unidade: string } | null };
-    const lista: Produto[] = ((data ?? []) as unknown as Row[]).map((e) => ({
-      id: e.produto_id,
-      nome: e.produtos?.nome ?? "",
-      unidade: e.produtos?.unidade ?? "",
-      estoque_disponivel: Number(e.quantidade),
-    })).sort((a, b) => a.nome.localeCompare(b.nome));
+    const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
+      supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
+      supabase.from("estoque_atual").select("produto_id, quantidade"),
+    ]);
+    if (errP) { toast.error("Erro ao carregar produtos"); return; }
+    const estoqueMap: Record<string, number> = {};
+    (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = e.quantidade; });
+    const lista: Produto[] = (prods || []).map((p: any) => ({
+      id: p.id, nome: p.nome, unidade: p.unidade,
+      estoque_disponivel: estoqueMap[p.id] ?? 0,
+    }));
     setProdutos(lista);
   };
 
@@ -64,57 +51,35 @@ function RequisicaoInterna() {
     if (quantidade <= 0) { toast.error("Quantidade deve ser maior que zero"); return; }
     const produto = produtos.find(p => p.id === produtoSelecionado);
     if (!produto) return;
-    if (itens.find(i => i.produto_id === produtoSelecionado)) {
-      toast.error("Produto já adicionado");
-      return;
+    if (itens.find(i => i.produto_id === produtoSelecionado)) { toast.error("Produto já adicionado"); return; }
+    if (produto.estoque_disponivel > 0 && quantidade > produto.estoque_disponivel) {
+      toast.warning("Atenção: estoque disponível é " + produto.estoque_disponivel + " " + produto.unidade);
     }
-    if (quantidade > produto.estoque_disponivel) {
-      toast.error(`Estoque disponível: ${produto.estoque_disponivel} ${produto.unidade}`);
-      return;
-    }
-    setItens([...itens, {
-      produto_id: produto.id,
-      nome: produto.nome,
-      unidade: produto.unidade,
-      quantidade,
-    }]);
+    setItens([...itens, { produto_id: produto.id, nome: produto.nome, unidade: produto.unidade, quantidade }]);
     setProdutoSelecionado("");
     setQuantidade(1);
   };
 
-  const removerItem = (produtoId: string) => {
-    setItens(itens.filter(i => i.produto_id !== produtoId));
-  };
+  const removerItem = (id: string) => setItens(itens.filter(i => i.produto_id !== id));
 
   const enviarRequisicao = async () => {
-    if (itens.length === 0) { toast.error("Adicione ao menos um item"); return; }
     if (!userId) { toast.error("Sessão expirada"); return; }
+    if (itens.length === 0) { toast.error("Adicione ao menos um item"); return; }
     setLoading(true);
     try {
       const { data: req, error: errReq } = await supabase
         .from("requisicoes_internas")
         .insert({ usuario_id: userId, observacao: observacao || null, status: "pendente" })
-        .select()
-        .single();
+        .select().single();
       if (errReq) throw errReq;
-
-      const { error: errItens } = await supabase
-        .from("requisicao_interna_itens")
-        .insert(itens.map(i => ({
-          requisicao_id: req.id,
-          produto_id: i.produto_id,
-          quantidade: i.quantidade,
-        })));
+      const { error: errItens } = await supabase.from("requisicao_interna_itens")
+        .insert(itens.map(i => ({ requisicao_id: req.id, produto_id: i.produto_id, quantidade: i.quantidade })));
       if (errItens) throw errItens;
-
-      toast.success("Requisição enviada com sucesso!");
+      toast.success("Requisição enviada!");
       navigate({ to: "/historico-interno" });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error("Erro ao enviar requisição: " + msg);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally { setLoading(false); }
   };
 
   const produtoSel = produtos.find(p => p.id === produtoSelecionado);
@@ -123,91 +88,54 @@ function RequisicaoInterna() {
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-2xl mx-auto p-4">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate({ to: "/" })} className="text-gray-400 hover:text-white">
-            <ArrowLeft size={22} />
-          </button>
+          <button onClick={() => navigate({ to: "/" })} className="text-gray-400 hover:text-white"><ArrowLeft size={22} /></button>
           <h1 className="text-xl font-bold text-orange-500">Requisição Interna</h1>
         </div>
-
-        {/* Adicionar item */}
         <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Adicionar Item</h2>
-          <select
-            value={produtoSelecionado}
-            onChange={e => setProdutoSelecionado(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-orange-500"
-          >
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase">Adicionar Item</h2>
+          <select value={produtoSelecionado} onChange={e => setProdutoSelecionado(e.target.value)}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-orange-500">
             <option value="">Selecione um produto...</option>
             {produtos.map(p => (
               <option key={p.id} value={p.id}>
-                {p.nome} → disponível: {p.estoque_disponivel} {p.unidade}
+                {p.nome} — {p.estoque_disponivel > 0 ? `disponível: ${p.estoque_disponivel} ${p.unidade}` : p.unidade}
               </option>
             ))}
           </select>
-
           <div className="flex gap-2">
-            <input
-              type="number"
-              min={1}
-              max={produtoSel?.estoque_disponivel}
-              value={quantidade}
-              onChange={e => setQuantidade(Number(e.target.value))}
-              placeholder="Qtd"
-              className="w-28 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
-            />
-            {produtoSel && (
-              <span className="flex items-center text-gray-400 text-sm">{produtoSel.unidade}</span>
-            )}
-            <button
-              onClick={adicionarItem}
-              className="flex-1 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-colors"
-            >
+            <input type="number" min={1} value={quantidade} onChange={e => setQuantidade(Number(e.target.value))}
+              className="w-28 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
+            {produtoSel && <span className="flex items-center text-gray-400 text-sm">{produtoSel.unidade}</span>}
+            <button onClick={adicionarItem} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2">
               <Plus size={16} /> Adicionar
             </button>
           </div>
+          {produtoSel && produtoSel.estoque_disponivel > 0 && (
+            <p className="text-xs text-gray-500 mt-2">Estoque atual: {produtoSel.estoque_disponivel} {produtoSel.unidade}</p>
+          )}
         </div>
-
-        {/* Lista de itens */}
         {itens.length > 0 && (
           <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">Itens da Requisição</h2>
-            <div className="space-y-2">
-              {itens.map(item => (
-                <div key={item.produto_id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2">
-                  <div>
-                    <p className="text-white font-medium">{item.nome}</p>
-                    <p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p>
-                  </div>
-                  <button onClick={() => removerItem(item.produto_id)} className="text-red-400 hover:text-red-300">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase">Itens</h2>
+            {itens.map(item => (
+              <div key={item.produto_id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 mb-2">
+                <div><p className="text-white font-medium">{item.nome}</p><p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p></div>
+                <button onClick={() => removerItem(item.produto_id)} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Observação */}
         <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-          <h2 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Observação (opcional)</h2>
-          <textarea
-            value={observacao}
-            onChange={e => setObservacao(e.target.value)}
-            rows={3}
-            placeholder="Motivo da requisição, urgência, etc."
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none focus:outline-none focus:border-orange-500"
-          />
+          <textarea value={observacao} onChange={e => setObservacao(e.target.value)} rows={3}
+            placeholder="Observação (opcional)"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none focus:outline-none focus:border-orange-500" />
         </div>
-
-        <button
-          onClick={enviarRequisicao}
-          disabled={loading || itens.length === 0}
-          className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 transition-colors"
-        >
+        <button onClick={enviarRequisicao} disabled={loading || itens.length === 0}
+          className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2">
           <Send size={18} />
-          {loading ? "Enviando..." : `Enviar Requisição (${itens.length} ${itens.length === 1 ? "item" : "itens"})`}
+          {loading ? "Enviando..." : `Enviar Requisição (${itens.length} item${itens.length !== 1 ? "s" : ""})`}
         </button>
       </div>
     </div>
   );
-}
+    }
