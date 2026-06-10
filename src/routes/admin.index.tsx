@@ -130,6 +130,14 @@ function AdminDashboard() {
           cor: "bg-amber-600",
         },
         {
+          label: "Nova Requisição Interna",
+          descricao: "Solicitar saída do estoque",
+          icon: ClipboardList,
+          rota: "/requisicao-interna" as const,
+          badge: 0,
+          cor: "bg-amber-500",
+        },
+        {
           label: "Requisições de Estoque",
           descricao: "Saídas internas pendentes",
           icon: ClipboardList,
@@ -137,6 +145,7 @@ function AdminDashboard() {
           badge: stats.requisicoesInternas,
           cor: "bg-amber-700",
         },
+
         {
           label: "Movimentações",
           descricao: "Histórico de entradas e saídas",
