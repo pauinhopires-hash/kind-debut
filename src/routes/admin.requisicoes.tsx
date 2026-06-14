@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Minus, Plus, Share2, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Minus, Pencil, Plus, Share2, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +21,7 @@ type Item = {
   id: string;
   quantidade: number;
   unidade: string | null;
+  nome_custom: string | null;
   produtos: { nome: string; unidade: string } | null;
 };
 
@@ -67,7 +68,7 @@ function AdminRequisicoes() {
     if (!itens[id]) {
       const { data } = await supabase
         .from("requisicao_itens")
-        .select("id, quantidade, unidade, produtos(nome, unidade)")
+        .select("id, quantidade, unidade, nome_custom, produtos(nome, unidade)")
         .eq("requisicao_id", id);
       setItens((prev) => ({ ...prev, [id]: (data ?? []) as unknown as Item[] }));
     }
@@ -85,7 +86,7 @@ function AdminRequisicoes() {
   const recarregarItens = async (reqId: string) => {
     const { data } = await supabase
       .from("requisicao_itens")
-      .select("id, quantidade, unidade, produtos(nome, unidade)")
+      .select("id, quantidade, unidade, nome_custom, produtos(nome, unidade)")
       .eq("requisicao_id", reqId);
     setItens((prev) => ({ ...prev, [reqId]: (data ?? []) as unknown as Item[] }));
   };
@@ -115,13 +116,30 @@ function AdminRequisicoes() {
     recarregarItens(reqId);
   };
 
+  const editarNome = async (reqId: string, it: Item) => {
+    const original = it.produtos?.nome ?? "";
+    const atual = it.nome_custom ?? original;
+    const novo = prompt(`Editar nome do produto (apenas nesta requisição):\nOriginal: ${original}`, atual);
+    if (novo === null) return;
+    const trimmed = novo.trim();
+    const valor = !trimmed || trimmed === original ? null : trimmed;
+    const { error } = await supabase
+      .from("requisicao_itens")
+      .update({ nome_custom: valor })
+      .eq("id", it.id);
+    if (error) return toast.error("Erro ao salvar", { description: error.message });
+    toast.success("Nome atualizado");
+    recarregarItens(reqId);
+  };
+
   const compartilharWhatsApp = (r: Req) => {
     const lista = itens[r.id] ?? [];
     if (lista.length === 0) return toast.error("Sem itens para compartilhar");
     const linhas = lista.map((it) => {
+      const nome = it.nome_custom || it.produtos?.nome || "—";
       const u = it.unidade || it.produtos?.unidade || "";
       const alt = it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? ` (era ${it.produtos.unidade})` : "";
-      return `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${u}${alt}`.trim();
+      return `• ${nome} — ${it.quantidade} ${u}${alt}`.trim();
     });
     const texto = [
       `*Requisição de Compra*`,
@@ -232,9 +250,28 @@ function AdminRequisicoes() {
                         <ul className="space-y-1.5">
                           {lista.map((it) => (
                             <li key={it.id} className="flex items-center justify-between gap-2 text-sm">
-                              <span className="min-w-0 flex-1 truncate text-foreground">
-                                {it.produtos?.nome ?? "—"}
-                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`truncate ${it.nome_custom ? "font-semibold text-primary" : "text-foreground"}`}>
+                                    {it.nome_custom || it.produtos?.nome || "—"}
+                                  </span>
+                                  {pendente && (
+                                    <button
+                                      onClick={() => editarNome(r.id, it)}
+                                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-card hover:text-primary"
+                                      aria-label="Editar nome"
+                                      title="Editar nome só nesta requisição"
+                                    >
+                                      <Pencil size={11} />
+                                    </button>
+                                  )}
+                                </div>
+                                {it.nome_custom && (
+                                  <p className="truncate text-[10px] text-muted-foreground">
+                                    original: {it.produtos?.nome ?? "—"}
+                                  </p>
+                                )}
+                              </div>
                               {pendente ? (
                                 <div className="flex items-center gap-1">
                                   <button

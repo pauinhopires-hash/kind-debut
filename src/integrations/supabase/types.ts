@@ -231,6 +231,7 @@ export type Database = {
           comprado_em: string | null
           created_at: string
           id: string
+          nome_custom: string | null
           produto_id: string
           quantidade: number
           requisicao_id: string
@@ -241,6 +242,7 @@ export type Database = {
           comprado_em?: string | null
           created_at?: string
           id?: string
+          nome_custom?: string | null
           produto_id: string
           quantidade: number
           requisicao_id: string
@@ -251,6 +253,7 @@ export type Database = {
           comprado_em?: string | null
           created_at?: string
           id?: string
+          nome_custom?: string | null
           produto_id?: string
           quantidade?: number
           requisicao_id?: string
