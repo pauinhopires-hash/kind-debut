@@ -275,8 +275,8 @@ function AdminRequisicoes() {
                                   </button>
                                 </div>
                               ) : (
-                                <span className="font-mono tabular-nums text-muted-foreground">
-                                  {it.quantidade} {it.produtos?.unidade ?? ""}
+                                <span className={`font-mono tabular-nums ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                  {it.quantidade} {it.unidade || it.produtos?.unidade || ""}
                                 </span>
                               )}
                             </li>
