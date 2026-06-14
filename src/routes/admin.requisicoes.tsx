@@ -66,7 +66,7 @@ function AdminRequisicoes() {
     if (!itens[id]) {
       const { data } = await supabase
         .from("requisicao_itens")
-        .select("id, quantidade, produtos(nome, unidade)")
+        .select("id, quantidade, unidade, produtos(nome, unidade)")
         .eq("requisicao_id", id);
       setItens((prev) => ({ ...prev, [id]: (data ?? []) as unknown as Item[] }));
     }
@@ -84,7 +84,7 @@ function AdminRequisicoes() {
   const recarregarItens = async (reqId: string) => {
     const { data } = await supabase
       .from("requisicao_itens")
-      .select("id, quantidade, produtos(nome, unidade)")
+      .select("id, quantidade, unidade, produtos(nome, unidade)")
       .eq("requisicao_id", reqId);
     setItens((prev) => ({ ...prev, [reqId]: (data ?? []) as unknown as Item[] }));
   };
