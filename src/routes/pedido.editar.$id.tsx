@@ -18,6 +18,7 @@ function EditarPedido() {
   const { user, loading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
+  const [unidadesOverride, setUnidadesOverride] = useState<Record<string, string>>({});
   const [observacao, setObservacao] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
