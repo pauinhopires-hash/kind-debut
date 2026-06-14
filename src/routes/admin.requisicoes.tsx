@@ -20,6 +20,7 @@ type Req = {
 type Item = {
   id: string;
   quantidade: number;
+  unidade: string | null;
   produtos: { nome: string; unidade: string } | null;
 };
 
@@ -66,7 +67,7 @@ function AdminRequisicoes() {
     if (!itens[id]) {
       const { data } = await supabase
         .from("requisicao_itens")
-        .select("id, quantidade, produtos(nome, unidade)")
+        .select("id, quantidade, unidade, produtos(nome, unidade)")
         .eq("requisicao_id", id);
       setItens((prev) => ({ ...prev, [id]: (data ?? []) as unknown as Item[] }));
     }
@@ -84,7 +85,7 @@ function AdminRequisicoes() {
   const recarregarItens = async (reqId: string) => {
     const { data } = await supabase
       .from("requisicao_itens")
-      .select("id, quantidade, produtos(nome, unidade)")
+      .select("id, quantidade, unidade, produtos(nome, unidade)")
       .eq("requisicao_id", reqId);
     setItens((prev) => ({ ...prev, [reqId]: (data ?? []) as unknown as Item[] }));
   };
@@ -117,9 +118,11 @@ function AdminRequisicoes() {
   const compartilharWhatsApp = (r: Req) => {
     const lista = itens[r.id] ?? [];
     if (lista.length === 0) return toast.error("Sem itens para compartilhar");
-    const linhas = lista.map(
-      (it) => `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${it.produtos?.unidade ?? ""}`.trim(),
-    );
+    const linhas = lista.map((it) => {
+      const u = it.unidade || it.produtos?.unidade || "";
+      const alt = it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? ` (era ${it.produtos.unidade})` : "";
+      return `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${u}${alt}`.trim();
+    });
     const texto = [
       `*Requisição de Compra*`,
       `Solicitante: ${r.usuarios?.nome ?? "—"}`,
@@ -260,8 +263,8 @@ function AdminRequisicoes() {
                                   >
                                     <Plus size={12} />
                                   </button>
-                                  <span className="ml-1 w-8 text-[10px] uppercase text-muted-foreground">
-                                    {it.produtos?.unidade ?? ""}
+                                  <span className={`ml-1 w-16 text-[10px] uppercase ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "font-bold text-primary" : "text-muted-foreground"}`}>
+                                    {it.unidade || it.produtos?.unidade || ""}
                                   </span>
                                   <button
                                     onClick={() => excluirItem(r.id, it.id, it.produtos?.nome ?? "item")}
@@ -272,8 +275,8 @@ function AdminRequisicoes() {
                                   </button>
                                 </div>
                               ) : (
-                                <span className="font-mono tabular-nums text-muted-foreground">
-                                  {it.quantidade} {it.produtos?.unidade ?? ""}
+                                <span className={`font-mono tabular-nums ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                  {it.quantidade} {it.unidade || it.produtos?.unidade || ""}
                                 </span>
                               )}
                             </li>

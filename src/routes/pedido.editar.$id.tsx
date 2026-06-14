@@ -18,6 +18,7 @@ function EditarPedido() {
   const { user, loading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
+  const [unidadesOverride, setUnidadesOverride] = useState<Record<string, string>>({});
   const [observacao, setObservacao] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -39,7 +40,7 @@ function EditarPedido() {
           .eq("id", id)
           .eq("usuario_id", user.id)
           .maybeSingle(),
-        supabase.from("requisicao_itens").select("produto_id, quantidade").eq("requisicao_id", id),
+        supabase.from("requisicao_itens").select("produto_id, quantidade, unidade").eq("requisicao_id", id),
         supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
       ]);
       if (!req || req.status !== "pendente") {
@@ -49,10 +50,13 @@ function EditarPedido() {
       }
       setObservacao(req.observacao ?? "");
       const map: Record<string, number> = {};
-      (itens ?? []).forEach((i: { produto_id: string; quantidade: number }) => {
+      const uMap: Record<string, string> = {};
+      (itens ?? []).forEach((i: { produto_id: string; quantidade: number; unidade: string | null }) => {
         map[i.produto_id] = Number(i.quantidade);
+        if (i.unidade) uMap[i.produto_id] = i.unidade;
       });
       setQuantidades(map);
+      setUnidadesOverride(uMap);
       setProdutos((prods ?? []) as Produto[]);
       setCarregando(false);
     })();
@@ -113,6 +117,7 @@ function EditarPedido() {
       requisicao_id: id,
       produto_id,
       quantidade,
+      unidade: unidadesOverride[produto_id] || null,
     }));
     const { error: e2 } = await supabase.from("requisicao_itens").insert(rows);
     setSalvando(false);
@@ -173,7 +178,10 @@ function EditarPedido() {
           {produtosFiltrados.map((p) => {
             const qtd = quantidades[p.id] ?? 0;
             const ativo = qtd > 0;
-            const fracionavel = ["KG", "LT"].includes(p.unidade.toUpperCase());
+            const unidadeAtual = (unidadesOverride[p.id] || p.unidade).toUpperCase();
+            const unidadeOriginal = p.unidade.toUpperCase();
+            const alterada = unidadeAtual !== unidadeOriginal;
+            const fracionavel = ["KG", "LT"].includes(unidadeAtual);
             const step = fracionavel ? 0.1 : 1;
             const arred = (v: number) =>
               fracionavel ? Math.round(v * 1000) / 1000 : Math.round(v);
@@ -186,10 +194,32 @@ function EditarPedido() {
               >
                 <div className="min-w-0 flex-1 pr-3">
                   <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Unid.: {p.unidade}
-                    {fracionavel && " (aceita decimal, ex: 0,5)"}
-                  </p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <span>Unid.:</span>
+                    <select
+                      value={unidadeAtual}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setUnidadesOverride((u) => {
+                          const novo = { ...u };
+                          if (v.toUpperCase() === unidadeOriginal) delete novo[p.id];
+                          else novo[p.id] = v;
+                          return novo;
+                        });
+                      }}
+                      className={`rounded border bg-background px-1.5 py-0.5 text-[11px] font-semibold uppercase outline-none focus:border-primary ${
+                        alterada ? "border-primary text-primary" : "border-border text-foreground"
+                      }`}
+                    >
+                      {["UND", "KG", "CX", "PC", "PCT", "LT"].map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                          {u === unidadeOriginal ? " (padrão)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {fracionavel && <span>(aceita decimal)</span>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
