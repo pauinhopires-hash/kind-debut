@@ -190,6 +190,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           requisicao_id: string
+          unidade: string | null
         }
         Insert: {
           created_at?: string
@@ -197,6 +198,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           requisicao_id: string
+          unidade?: string | null
         }
         Update: {
           created_at?: string
@@ -204,6 +206,7 @@ export type Database = {
           produto_id?: string
           quantidade?: number
           requisicao_id?: string
+          unidade?: string | null
         }
         Relationships: [
           {
@@ -231,6 +234,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           requisicao_id: string
+          unidade: string | null
         }
         Insert: {
           comprado?: boolean
@@ -240,6 +244,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           requisicao_id: string
+          unidade?: string | null
         }
         Update: {
           comprado?: boolean
@@ -249,6 +254,7 @@ export type Database = {
           produto_id?: string
           quantidade?: number
           requisicao_id?: string
+          unidade?: string | null
         }
         Relationships: [
           {
