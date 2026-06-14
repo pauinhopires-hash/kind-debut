@@ -33,6 +33,7 @@ function PedidoPage() {
   const [estoque, setEstoque] = useState<Record<string, number>>({});
   const [carregando, setCarregando] = useState(true);
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
+  const [unidadesOverride, setUnidadesOverride] = useState<Record<string, string>>({});
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [busca, setBusca] = useState("");
