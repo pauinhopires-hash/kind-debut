@@ -118,9 +118,11 @@ function AdminRequisicoes() {
   const compartilharWhatsApp = (r: Req) => {
     const lista = itens[r.id] ?? [];
     if (lista.length === 0) return toast.error("Sem itens para compartilhar");
-    const linhas = lista.map(
-      (it) => `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${it.produtos?.unidade ?? ""}`.trim(),
-    );
+    const linhas = lista.map((it) => {
+      const u = it.unidade || it.produtos?.unidade || "";
+      const alt = it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? ` (era ${it.produtos.unidade})` : "";
+      return `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${u}${alt}`.trim();
+    });
     const texto = [
       `*Requisição de Compra*`,
       `Solicitante: ${r.usuarios?.nome ?? "—"}`,
