@@ -117,6 +117,7 @@ function EditarPedido() {
       requisicao_id: id,
       produto_id,
       quantidade,
+      unidade: unidadesOverride[produto_id] || null,
     }));
     const { error: e2 } = await supabase.from("requisicao_itens").insert(rows);
     setSalvando(false);
