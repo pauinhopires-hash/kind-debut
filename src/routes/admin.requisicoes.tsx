@@ -263,8 +263,8 @@ function AdminRequisicoes() {
                                   >
                                     <Plus size={12} />
                                   </button>
-                                  <span className="ml-1 w-8 text-[10px] uppercase text-muted-foreground">
-                                    {it.produtos?.unidade ?? ""}
+                                  <span className={`ml-1 w-16 text-[10px] uppercase ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "font-bold text-primary" : "text-muted-foreground"}`}>
+                                    {it.unidade || it.produtos?.unidade || ""}
                                   </span>
                                   <button
                                     onClick={() => excluirItem(r.id, it.id, it.produtos?.nome ?? "item")}
