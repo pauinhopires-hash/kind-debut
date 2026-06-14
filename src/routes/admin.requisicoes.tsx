@@ -250,9 +250,28 @@ function AdminRequisicoes() {
                         <ul className="space-y-1.5">
                           {lista.map((it) => (
                             <li key={it.id} className="flex items-center justify-between gap-2 text-sm">
-                              <span className="min-w-0 flex-1 truncate text-foreground">
-                                {it.produtos?.nome ?? "—"}
-                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`truncate ${it.nome_custom ? "font-semibold text-primary" : "text-foreground"}`}>
+                                    {it.nome_custom || it.produtos?.nome || "—"}
+                                  </span>
+                                  {pendente && (
+                                    <button
+                                      onClick={() => editarNome(r.id, it)}
+                                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-card hover:text-primary"
+                                      aria-label="Editar nome"
+                                      title="Editar nome só nesta requisição"
+                                    >
+                                      <Pencil size={11} />
+                                    </button>
+                                  )}
+                                </div>
+                                {it.nome_custom && (
+                                  <p className="truncate text-[10px] text-muted-foreground">
+                                    original: {it.produtos?.nome ?? "—"}
+                                  </p>
+                                )}
+                              </div>
                               {pendente ? (
                                 <div className="flex items-center gap-1">
                                   <button
