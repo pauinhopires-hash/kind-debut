@@ -317,6 +317,10 @@ function PedidoPage() {
                           const qtd = quantidades[p.id] ?? 0;
                           const ativo = qtd > 0;
                           const est = estoque[p.id];
+                          const fracionavel = ["KG", "LT"].includes(p.unidade.toUpperCase());
+                          const step = fracionavel ? 0.1 : 1;
+                          const arred = (v: number) =>
+                            fracionavel ? Math.round(v * 1000) / 1000 : Math.round(v);
                           return (
                             <li
                               key={p.id}
@@ -330,6 +334,7 @@ function PedidoPage() {
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   Unid.: {p.unidade}
+                                  {fracionavel && " (aceita decimal, ex: 0,5)"}
                                   {est !== undefined && (
                                     <>
                                       {" · "}
@@ -346,7 +351,7 @@ function PedidoPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => setQtd(p.id, Math.max(0, qtd - 1))}
+                                  onClick={() => setQtd(p.id, Math.max(0, arred(qtd - step)))}
                                   disabled={qtd === 0}
                                   className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition hover:border-primary disabled:opacity-40"
                                   aria-label="Diminuir"
@@ -357,16 +362,17 @@ function PedidoPage() {
                                   type="number"
                                   inputMode="decimal"
                                   min={0}
+                                  step={step}
                                   value={qtd === 0 ? "" : qtd}
                                   onChange={(e) => {
-                                    const v = Number(e.target.value);
-                                    setQtd(p.id, Number.isFinite(v) && v > 0 ? v : 0);
+                                    const v = Number(e.target.value.replace(",", "."));
+                                    setQtd(p.id, Number.isFinite(v) && v > 0 ? arred(v) : 0);
                                   }}
                                   placeholder="0"
-                                  className="h-9 w-14 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
+                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
                                 />
                                 <button
-                                  onClick={() => setQtd(p.id, qtd + 1)}
+                                  onClick={() => setQtd(p.id, arred(qtd + step))}
                                   className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground transition hover:opacity-90"
                                   aria-label="Aumentar"
                                 >
