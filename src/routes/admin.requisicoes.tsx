@@ -116,13 +116,30 @@ function AdminRequisicoes() {
     recarregarItens(reqId);
   };
 
+  const editarNome = async (reqId: string, it: Item) => {
+    const original = it.produtos?.nome ?? "";
+    const atual = it.nome_custom ?? original;
+    const novo = prompt(`Editar nome do produto (apenas nesta requisição):\nOriginal: ${original}`, atual);
+    if (novo === null) return;
+    const trimmed = novo.trim();
+    const valor = !trimmed || trimmed === original ? null : trimmed;
+    const { error } = await supabase
+      .from("requisicao_itens")
+      .update({ nome_custom: valor })
+      .eq("id", it.id);
+    if (error) return toast.error("Erro ao salvar", { description: error.message });
+    toast.success("Nome atualizado");
+    recarregarItens(reqId);
+  };
+
   const compartilharWhatsApp = (r: Req) => {
     const lista = itens[r.id] ?? [];
     if (lista.length === 0) return toast.error("Sem itens para compartilhar");
     const linhas = lista.map((it) => {
+      const nome = it.nome_custom || it.produtos?.nome || "—";
       const u = it.unidade || it.produtos?.unidade || "";
       const alt = it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? ` (era ${it.produtos.unidade})` : "";
-      return `• ${it.produtos?.nome ?? "—"} — ${it.quantidade} ${u}${alt}`.trim();
+      return `• ${nome} — ${it.quantidade} ${u}${alt}`.trim();
     });
     const texto = [
       `*Requisição de Compra*`,
