@@ -20,6 +20,7 @@ type Req = {
 type Item = {
   id: string;
   quantidade: number;
+  unidade: string | null;
   produtos: { nome: string; unidade: string } | null;
 };
 
