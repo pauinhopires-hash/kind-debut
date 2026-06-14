@@ -319,7 +319,10 @@ function PedidoPage() {
                           const qtd = quantidades[p.id] ?? 0;
                           const ativo = qtd > 0;
                           const est = estoque[p.id];
-                          const fracionavel = ["KG", "LT"].includes(p.unidade.toUpperCase());
+                          const unidadeAtual = (unidadesOverride[p.id] || p.unidade).toUpperCase();
+                          const unidadeOriginal = p.unidade.toUpperCase();
+                          const alterada = unidadeAtual !== unidadeOriginal;
+                          const fracionavel = ["KG", "LT"].includes(unidadeAtual);
                           const step = fracionavel ? 0.1 : 1;
                           const arred = (v: number) =>
                             fracionavel ? Math.round(v * 1000) / 1000 : Math.round(v);
@@ -334,22 +337,39 @@ function PedidoPage() {
                                 <p className="truncate text-sm font-semibold text-foreground">
                                   {p.nome}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Unid.: {p.unidade}
-                                  {fracionavel && " (aceita decimal, ex: 0,5)"}
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                  <span>Unid.:</span>
+                                  <select
+                                    value={unidadeAtual}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      setUnidadesOverride((u) => {
+                                        const novo = { ...u };
+                                        if (v.toUpperCase() === unidadeOriginal) delete novo[p.id];
+                                        else novo[p.id] = v;
+                                        return novo;
+                                      });
+                                    }}
+                                    className={`rounded border bg-background px-1.5 py-0.5 text-[11px] font-semibold uppercase outline-none focus:border-primary ${
+                                      alterada ? "border-primary text-primary" : "border-border text-foreground"
+                                    }`}
+                                  >
+                                    {["UND", "KG", "CX", "PC", "PCT", "LT"].map((u) => (
+                                      <option key={u} value={u}>
+                                        {u}
+                                        {u === unidadeOriginal ? " (padrão)" : ""}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  {fracionavel && <span>(aceita decimal)</span>}
                                   {est !== undefined && (
-                                    <>
-                                      {" · "}
-                                      <span
-                                        className={
-                                          est <= 0 ? "text-destructive" : "text-foreground/70"
-                                        }
-                                      >
-                                        Estoque: {est}
-                                      </span>
-                                    </>
+                                    <span
+                                      className={est <= 0 ? "text-destructive" : "text-foreground/70"}
+                                    >
+                                      · Estoque: {est}
+                                    </span>
                                   )}
-                                </p>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
