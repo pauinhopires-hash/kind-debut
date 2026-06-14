@@ -40,7 +40,7 @@ function EditarPedido() {
           .eq("id", id)
           .eq("usuario_id", user.id)
           .maybeSingle(),
-        supabase.from("requisicao_itens").select("produto_id, quantidade").eq("requisicao_id", id),
+        supabase.from("requisicao_itens").select("produto_id, quantidade, unidade").eq("requisicao_id", id),
         supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
       ]);
       if (!req || req.status !== "pendente") {
@@ -50,10 +50,13 @@ function EditarPedido() {
       }
       setObservacao(req.observacao ?? "");
       const map: Record<string, number> = {};
-      (itens ?? []).forEach((i: { produto_id: string; quantidade: number }) => {
+      const uMap: Record<string, string> = {};
+      (itens ?? []).forEach((i: { produto_id: string; quantidade: number; unidade: string | null }) => {
         map[i.produto_id] = Number(i.quantidade);
+        if (i.unidade) uMap[i.produto_id] = i.unidade;
       });
       setQuantidades(map);
+      setUnidadesOverride(uMap);
       setProdutos((prods ?? []) as Produto[]);
       setCarregando(false);
     })();
