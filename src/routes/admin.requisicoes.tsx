@@ -21,6 +21,7 @@ type Item = {
   id: string;
   quantidade: number;
   unidade: string | null;
+  nome_custom: string | null;
   produtos: { nome: string; unidade: string } | null;
 };
 
