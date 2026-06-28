@@ -1,51 +1,29 @@
-# Requisições de Estoque (Internas) — o que falta
+## Objetivo
 
-O fluxo principal já funciona: usuário cria → admin aprova → admin confirma entrega (baixa estoque + grava movimentação) → histórico do usuário. Faltam as funções de paridade com o fluxo de compras e algumas melhorias de robustez.
+Permitir instalar o app "Misturaria Fina Mezcla" no desktop (Windows, Mac, Linux) e também no celular, com ícone próprio, abrindo em janela sem barra do navegador. Sem modo offline — quando aberto precisa de internet, igual hoje.
 
-## 1. Paridade no admin (`/admin/requisicoes-internas`)
+## O que muda para você
 
-Mesmas funções que adicionamos em `/admin/requisicoes`:
+- No Chrome/Edge aparece um botão "Instalar" na barra de endereço.
+- Depois de instalado, vira um ícone no menu/área de trabalho.
+- Abre em janela própria, em tela cheia, parecendo um programa nativo.
+- Continua sendo o mesmo app (mesmo banco, mesmo login, mesmas telas) — só muda a forma de abrir.
 
-- **Editar quantidade do item** (apenas em status `pendente`)
-  - Botões ± e input direto na lista expandida
-  - Validar contra estoque disponível antes de salvar
-- **Excluir item** (apenas em `pendente`)
-  - Lixeira ao lado de cada item, com confirmação
-  - Se ficar sem itens, alertar para rejeitar a requisição
-- **Compartilhar no WhatsApp**
-  - Botão na requisição (pendente ou aprovada) que abre `wa.me` com a lista formatada (solicitante, data, itens, observação)
+## O que será feito (técnico)
 
-## 2. Admin também pode criar requisição interna
+1. Criar `public/manifest.webmanifest` com nome, cores (laranja `#E8650A` / fundo `#0A0A0A`), `display: standalone`, `start_url: /`.
+2. Gerar ícones do app (192x192, 512x512, 512x512 maskable) em `public/` a partir da identidade visual atual.
+3. Adicionar no `src/routes/__root.tsx` os links de `manifest`, `theme-color` e `apple-touch-icon` no `head()`.
+4. **Não** adicionar service worker, nem `vite-plugin-pwa`, nem modo offline (você não pediu, e isso evita problemas de cache que travam atualizações).
 
-Hoje só usuários comuns conseguem usar `/requisicao-interna`. Liberar o acesso para admin (botão de atalho no painel admin, em "Estoque"), reusando a mesma tela já existente — sem nova rota.
+## O que NÃO muda
 
-## 3. Validações que estão faltando
+- Nada do backend, login, requisições, estoque, papéis, telas atuais.
+- O app continua acessível normalmente pelo navegador para quem não quiser instalar.
+- A versão publicada continua atualizando sozinha a cada deploy.
 
-- **Re-checar estoque no momento da aprovação**: hoje só checa na entrega. Se o admin aprova mas alguém já consumiu o estoque, só vai dar erro na hora de entregar. Mostrar aviso na aprovação quando estoque ficou insuficiente.
-- **Bloquear editar/excluir após aprovada**: já garantido por UI (só pendente), mas adicionar guarda no clique também.
-- **Indicador visual de estoque insuficiente** na lista expandida (item vermelho quando `quantidade > estoque_atual`).
+## Como instalar depois de pronto
 
-## 4. UX menores
-
-- Botão "Nova requisição interna" no `/admin/requisicoes-internas` (atalho para `/requisicao-interna`).
-- Contador de pendentes já existe no header — manter.
-- Após "Confirmar Entrega", recarregar também `stats` no dashboard admin (hoje só recarrega na próxima visita ao `/admin`).
-
-## Fora de escopo (não vou mexer)
-
-- Schema do banco — tabelas `requisicoes_internas`, `requisicao_interna_itens`, `movimentacoes_estoque` e `estoque_atual` já estão corretas, com RLS e trigger de status.
-- Fluxo do usuário comum (`/requisicao-interna` e `/historico-interno`) — já funciona.
-
-## Detalhes técnicos
-
-- Arquivo principal: `src/routes/admin.requisicoes-internas.tsx` (adicionar `atualizarQtd`, `excluirItem`, `compartilharWhatsApp`, espelhando `admin.requisicoes.tsx`).
-- Edição de quantidade: `UPDATE requisicao_interna_itens SET quantidade = ?`.
-- Exclusão: `DELETE FROM requisicao_interna_itens WHERE id = ?`.
-- Verificação de estoque insuficiente: cruzar `itens[req.id]` com `estoque_atual` carregado uma vez por expansão.
-- Compartilhamento: `window.open("https://wa.me/?text=" + encodeURIComponent(msg))`.
-
-## Confirme antes de eu seguir
-
-1. Confirma que quer as 3 funções de paridade (editar qtd, excluir, WhatsApp)?
-2. Quer mesmo o atalho para o admin criar requisição interna no painel?
-3. Posso incluir o aviso de estoque insuficiente na aprovação ou prefere deixar só na entrega?
+- **Desktop (Chrome/Edge):** abrir o app → ícone de instalar na barra de endereço (ou menu ⋮ → "Instalar Misturaria...").
+- **Android:** menu do Chrome → "Adicionar à tela inicial".
+- **iPhone/iPad:** Safari → compartilhar → "Adicionar à Tela de Início".
