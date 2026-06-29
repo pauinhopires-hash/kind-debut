@@ -426,8 +426,9 @@ function PedidoPage() {
                 </div>
               </section>
             ))}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {itensSelecionados.length > 0 && (
           <div className="mt-6">
