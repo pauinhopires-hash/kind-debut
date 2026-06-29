@@ -305,7 +305,7 @@ function PedidoPage() {
         )}
 
         {carregando ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Carregando produtos...</p>
+          <SkeletonStack rows={6} />
         ) : produtos.length === 0 ? (
           <p className="py-12 text-center text-sm text-muted-foreground">
             Nenhum produto disponível para o seu perfil.
