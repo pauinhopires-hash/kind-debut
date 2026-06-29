@@ -343,11 +343,17 @@ function PedidoPage() {
                           const arred = (v: number) =>
                             fracionavel ? Math.round(v * 1000) / 1000 : Math.round(v);
                           return (
-                            <li
+                            <motion.li
                               key={p.id}
-                              className={`flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition ${
-                                ativo ? "border-primary/60" : "border-border"
-                              }`}
+                              layout
+                              animate={{
+                                borderColor: ativo ? "rgba(232,101,10,0.6)" : "hsl(var(--border))",
+                                boxShadow: ativo
+                                  ? "0 4px 16px -6px rgba(232,101,10,0.35)"
+                                  : "0 0 0 0 rgba(0,0,0,0)",
+                              }}
+                              transition={{ duration: 0.25, ease: easeOutExpo }}
+                              className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
                             >
                               <div className="min-w-0 flex-1 pr-3">
                                 <p className="truncate text-sm font-semibold text-foreground">
