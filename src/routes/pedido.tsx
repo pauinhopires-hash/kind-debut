@@ -459,26 +459,51 @@ function PedidoPage() {
       </div>
 
       {/* Barra fixa de envio */}
-      {itensSelecionados.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-6 py-4 backdrop-blur">
-          <div className="mx-auto flex max-w-md items-center justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Itens selecionados
-              </p>
-              <p className="text-lg font-bold text-foreground">{itensSelecionados.length}</p>
+      <AnimatePresence>
+        {itensSelecionados.length > 0 && (
+          <motion.div
+            key="submit-bar"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-6 py-4 backdrop-blur"
+          >
+            <div className="mx-auto flex max-w-md items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Itens selecionados
+                </p>
+                <motion.p
+                  key={itensSelecionados.length}
+                  initial={{ scale: 0.6, opacity: 0, y: -4 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                  className="text-lg font-bold text-foreground"
+                >
+                  {itensSelecionados.length}
+                </motion.p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02, boxShadow: "0 12px 30px -8px rgba(232,101,10,0.55)" }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                onClick={handleSalvar}
+                disabled={salvando}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground disabled:opacity-60"
+              >
+                <motion.span
+                  animate={salvando ? { rotate: 360 } : { rotate: 0 }}
+                  transition={salvando ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
+                >
+                  <Check size={18} />
+                </motion.span>
+                {salvando ? "Enviando..." : "Enviar pedido"}
+              </motion.button>
             </div>
-            <button
-              onClick={handleSalvar}
-              disabled={salvando}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-95 disabled:opacity-60"
-            >
-              <Check size={18} />
-              {salvando ? "Enviando..." : "Enviar pedido"}
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
