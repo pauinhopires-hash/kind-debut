@@ -388,14 +388,17 @@ function PedidoPage() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button
+                                <motion.button
+                                  whileTap={{ scale: 0.88 }}
+                                  whileHover={qtd === 0 ? undefined : { scale: 1.05 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 22 }}
                                   onClick={() => setQtd(p.id, Math.max(0, arred(qtd - step)))}
                                   disabled={qtd === 0}
-                                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition hover:border-primary disabled:opacity-40"
+                                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:border-primary disabled:opacity-40"
                                   aria-label="Diminuir"
                                 >
                                   <Minus size={14} />
-                                </button>
+                                </motion.button>
                                 <input
                                   type="number"
                                   inputMode="decimal"
@@ -407,15 +410,18 @@ function PedidoPage() {
                                     setQtd(p.id, Number.isFinite(v) && v > 0 ? arred(v) : 0);
                                   }}
                                   placeholder="0"
-                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
+                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none transition-colors focus:border-primary"
                                 />
-                                <button
+                                <motion.button
+                                  whileTap={{ scale: 0.88 }}
+                                  whileHover={{ scale: 1.08, boxShadow: "0 0 0 4px rgba(232,101,10,0.18)" }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 22 }}
                                   onClick={() => setQtd(p.id, arred(qtd + step))}
-                                  className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground transition hover:opacity-90"
+                                  className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground"
                                   aria-label="Aumentar"
                                 >
                                   <Plus size={14} />
-                                </button>
+                                </motion.button>
                               </div>
                             </li>
                           );
