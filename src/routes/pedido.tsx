@@ -304,16 +304,19 @@ function PedidoPage() {
           </div>
         )}
 
+        <AnimatePresence mode="wait" initial={false}>
         {carregando ? (
-          <SkeletonStack rows={6} />
+          <motion.div key="sk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <SkeletonStack rows={6} />
+          </motion.div>
         ) : produtos.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
+          <motion.p key="empty1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-sm text-muted-foreground">
             Nenhum produto disponível para o seu perfil.
-          </p>
+          </motion.p>
         ) : produtosFiltrados.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Nada encontrado.</p>
+          <motion.p key="empty2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-sm text-muted-foreground">Nada encontrado.</motion.p>
         ) : (
-          <div className="space-y-6">
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-6">
             {produtosAgrupados.map(({ grupo, subgrupos }) => (
               <section key={grupo}>
                 <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
