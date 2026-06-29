@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Minus, Plus, Check, RotateCcw } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { SkeletonStack } from "@/components/skeleton";
+import { easeOutExpo, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/pedido")({
   head: () => ({
@@ -213,26 +216,36 @@ function PedidoPage() {
     <main className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center gap-3">
-          <button
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/" })}
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1">
+          </motion.button>
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: easeOutExpo }}
+            className="flex-1"
+          >
             <p className="text-xs uppercase tracking-widest text-primary">Nova requisição</p>
             <h1 className="text-lg font-bold text-foreground">Fazer pedido</h1>
-          </div>
-          <button
+          </motion.div>
+          <motion.button
+            whileHover={{ y: -1, borderColor: "hsl(var(--primary))" }}
+            whileTap={tap}
             onClick={repetirUltimo}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition hover:border-primary"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground"
           >
             <RotateCcw size={14} />
             Repetir
-          </button>
+          </motion.button>
         </div>
       </header>
+
 
       <div className="mx-auto max-w-md px-6 pt-4">
         {isAdmin && (
