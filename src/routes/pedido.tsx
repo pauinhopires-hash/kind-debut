@@ -429,7 +429,7 @@ function PedidoPage() {
                                   <Plus size={14} />
                                 </motion.button>
                               </div>
-                            </li>
+                            </motion.li>
                           );
                         })}
                       </ul>
