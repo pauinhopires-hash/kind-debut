@@ -30,6 +30,13 @@ function Index() {
     init();
   }, []);
 
+  const saudacao = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Bom dia";
+    if (h < 18) return "Boa tarde";
+    return "Boa noite";
+  })();
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/login" });
@@ -68,22 +75,27 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2xl md:max-w-4xl mx-auto p-4 md:p-8">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeUp}
-          className="flex items-center justify-between mb-8 pt-4"
+          className="flex items-center justify-between mb-8 md:mb-12 pt-4"
         >
           <div>
-            <h1 className="text-2xl font-bold text-orange-500">MISTURARIA</h1>
-            {nomeUsuario && <p className="text-gray-400 text-sm">Olá, {nomeUsuario}</p>}
+            <h1 className="text-2xl md:text-3xl font-bold text-orange-500">MISTURARIA</h1>
+            {nomeUsuario && (
+              <p className="text-gray-400 text-sm md:text-base">
+                {saudacao}, {nomeUsuario}
+              </p>
+            )}
           </div>
           <motion.button
             whileHover={{ x: 2, color: "#fff" }}
             whileTap={tap}
             onClick={handleLogout}
-            className="text-gray-400 flex items-center gap-1 text-sm"
+            className="text-gray-400 flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-md px-2 py-1"
+            aria-label="Sair da conta"
           >
             <LogOut size={16} /> Sair
           </motion.button>
@@ -93,7 +105,7 @@ function Index() {
           initial="hidden"
           animate="visible"
           variants={staggerList(0.07, 0.12)}
-          className="space-y-3"
+          className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"
         >
           {acoes.map((acao) => (
             <motion.button

@@ -120,7 +120,7 @@ function HistoricoPage() {
   return (
     <main className="min-h-screen bg-background pb-12">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center gap-3">
+        <div className="mx-auto flex max-w-md md:max-w-3xl items-center gap-3">
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
@@ -141,7 +141,7 @@ function HistoricoPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md px-6 pt-4">
+      <div className="mx-auto max-w-md md:max-w-3xl px-6 pt-4">
         <AnimatePresence mode="wait" initial={false}>
           {carregando ? (
             <motion.div

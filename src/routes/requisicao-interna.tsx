@@ -1,15 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Send, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonStack } from "@/components/skeleton";
 
 export const Route = createFileRoute("/requisicao-interna")({
+  head: () => ({
+    meta: [
+      { title: "Requisição de estoque — Misturaria Fina Mezcla" },
+      { name: "description", content: "Retire insumos do estoque central." },
+    ],
+  }),
   component: RequisicaoInterna,
 });
 
-type Produto = { id: string; nome: string; unidade: string; estoque_disponivel: number; };
-type ItemRequisicao = { produto_id: string; nome: string; unidade: string; quantidade: number; };
+type Produto = { id: string; nome: string; unidade: string; estoque_disponivel: number };
+type ItemRequisicao = { produto_id: string; nome: string; unidade: string; quantidade: number };
 
 function RequisicaoInterna() {
   const navigate = useNavigate();
@@ -19,6 +26,7 @@ function RequisicaoInterna() {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState("");
   const [loading, setLoading] = useState(false);
+  const [carregandoProdutos, setCarregandoProdutos] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,11 +40,12 @@ function RequisicaoInterna() {
   }, []);
 
   const fetchProdutos = async () => {
+    setCarregandoProdutos(true);
     const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
       supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
     ]);
-    if (errP) { toast.error("Erro ao carregar produtos"); return; }
+    if (errP) { toast.error("Erro ao carregar produtos"); setCarregandoProdutos(false); return; }
     const estoqueMap: Record<string, number> = {};
     (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = e.quantidade; });
     const lista: Produto[] = (prods || []).map((p: any) => ({
@@ -44,6 +53,7 @@ function RequisicaoInterna() {
       estoque_disponivel: estoqueMap[p.id] ?? 0,
     }));
     setProdutos(lista);
+    setCarregandoProdutos(false);
   };
 
   const adicionarItem = () => {
@@ -85,57 +95,114 @@ function RequisicaoInterna() {
   const produtoSel = produtos.find(p => p.id === produtoSelecionado);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+    <main className="min-h-screen bg-black text-white">
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate({ to: "/" })} className="text-gray-400 hover:text-white"><ArrowLeft size={22} /></button>
-          <h1 className="text-xl font-bold text-orange-500">Requisição Interna</h1>
-        </div>
-        <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase">Adicionar Item</h2>
-          <select value={produtoSelecionado} onChange={e => setProdutoSelecionado(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-orange-500">
-            <option value="">Selecione um produto...</option>
-            {produtos.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.nome} — {p.estoque_disponivel > 0 ? `disponível: ${p.estoque_disponivel} ${p.unidade}` : p.unidade}
-              </option>
-            ))}
-          </select>
-          <div className="flex gap-2">
-            <input type="number" min={1} value={quantidade} onChange={e => setQuantidade(Number(e.target.value))}
-              className="w-28 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500" />
-            {produtoSel && <span className="flex items-center text-gray-400 text-sm">{produtoSel.unidade}</span>}
-            <button onClick={adicionarItem} className="flex-1 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2">
-              <Plus size={16} /> Adicionar
-            </button>
+          <button
+            onClick={() => navigate({ to: "/" })}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-orange-500">Estoque interno</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white">Requisição Interna</h1>
           </div>
-          {produtoSel && produtoSel.estoque_disponivel > 0 && (
-            <p className="text-xs text-gray-500 mt-2">Estoque atual: {produtoSel.estoque_disponivel} {produtoSel.unidade}</p>
+        </div>
+
+        <div className="bg-zinc-900 rounded-xl p-4 md:p-5 mb-4">
+          <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Adicionar Item</h2>
+
+          {carregandoProdutos ? (
+            <SkeletonStack rows={2} />
+          ) : produtos.length === 0 ? (
+            <div className="py-6 text-center">
+              <PackageSearch size={28} className="mx-auto text-zinc-600" />
+              <p className="mt-2 text-sm text-gray-400">Nenhum produto disponível.</p>
+            </div>
+          ) : (
+            <>
+              <select
+                value={produtoSelecionado}
+                onChange={e => setProdutoSelecionado(e.target.value)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
+              >
+                <option value="">Selecione um produto...</option>
+                {produtos.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.nome} — {p.estoque_disponivel > 0 ? `disponível: ${p.estoque_disponivel} ${p.unidade}` : p.unidade}
+                  </option>
+                ))}
+              </select>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={quantidade}
+                  onChange={e => setQuantidade(Number(e.target.value))}
+                  className="w-28 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                  aria-label="Quantidade"
+                />
+                {produtoSel && <span className="flex items-center text-gray-400 text-sm">{produtoSel.unidade}</span>}
+                <button
+                  onClick={adicionarItem}
+                  disabled={!produtoSelecionado}
+                  className="flex-1 min-w-[8rem] bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                >
+                  <Plus size={16} /> Adicionar
+                </button>
+              </div>
+              {produtoSel && produtoSel.estoque_disponivel > 0 && (
+                <p className="text-xs text-gray-500 mt-2">Estoque atual: {produtoSel.estoque_disponivel} {produtoSel.unidade}</p>
+              )}
+            </>
           )}
         </div>
+
         {itens.length > 0 && (
-          <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase">Itens</h2>
-            {itens.map(item => (
-              <div key={item.produto_id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 mb-2">
-                <div><p className="text-white font-medium">{item.nome}</p><p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p></div>
-                <button onClick={() => removerItem(item.produto_id)} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
-              </div>
-            ))}
+          <div className="bg-zinc-900 rounded-xl p-4 md:p-5 mb-4">
+            <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Itens ({itens.length})</h2>
+            <ul className="space-y-2">
+              {itens.map(item => (
+                <li key={item.produto_id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 transition-colors hover:bg-zinc-800/80">
+                  <div className="min-w-0">
+                    <p className="text-white font-medium truncate">{item.nome}</p>
+                    <p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p>
+                  </div>
+                  <button
+                    onClick={() => removerItem(item.produto_id)}
+                    className="text-red-400 hover:text-red-300 rounded-md p-2 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    aria-label={`Remover ${item.nome}`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-        <div className="bg-zinc-900 rounded-xl p-4 mb-4">
-          <textarea value={observacao} onChange={e => setObservacao(e.target.value)} rows={3}
-            placeholder="Observação (opcional)"
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none focus:outline-none focus:border-orange-500" />
+
+        <div className="bg-zinc-900 rounded-xl p-4 md:p-5 mb-4">
+          <label className="mb-2 block text-xs uppercase tracking-wider text-gray-400">Observação (opcional)</label>
+          <textarea
+            value={observacao}
+            onChange={e => setObservacao(e.target.value)}
+            rows={3}
+            placeholder="Detalhes, urgência, etc."
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none focus:outline-none focus:border-orange-500"
+          />
         </div>
-        <button onClick={enviarRequisicao} disabled={loading || itens.length === 0}
-          className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2">
-          <Send size={18} />
+
+        <button
+          onClick={enviarRequisicao}
+          disabled={loading || itens.length === 0}
+          className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          <Send size={18} className={loading ? "animate-pulse" : ""} />
           {loading ? "Enviando..." : `Enviar Requisição (${itens.length} item${itens.length !== 1 ? "s" : ""})`}
         </button>
       </div>
-    </div>
+    </main>
   );
-    }
+}
