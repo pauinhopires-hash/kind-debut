@@ -247,7 +247,7 @@ function PedidoPage() {
       </header>
 
 
-      <div className="mx-auto max-w-md px-6 pt-4">
+      <div className="mx-auto max-w-md md:max-w-3xl px-6 pt-4">
         {isAdmin && (
           <div className="mb-3">
             <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
