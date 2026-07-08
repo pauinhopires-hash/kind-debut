@@ -34,8 +34,13 @@ function AdminLayout() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Carregando...</p>
+      <div className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-5xl space-y-3">
+          <div className="mb-6 h-8 w-40 animate-pulse rounded-md bg-card" />
+          <div className="h-24 w-full animate-pulse rounded-xl bg-card" />
+          <div className="h-24 w-full animate-pulse rounded-xl bg-card" />
+          <div className="h-24 w-full animate-pulse rounded-xl bg-card" />
+        </div>
       </div>
     );
   }

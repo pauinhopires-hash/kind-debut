@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Minus, Plus, Check, RotateCcw } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { SkeletonStack } from "@/components/skeleton";
+import { easeOutExpo, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/pedido")({
   head: () => ({
@@ -212,29 +215,39 @@ function PedidoPage() {
   return (
     <main className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center gap-3">
-          <button
+        <div className="mx-auto flex max-w-md md:max-w-3xl items-center gap-3">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/" })}
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1">
+          </motion.button>
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: easeOutExpo }}
+            className="flex-1"
+          >
             <p className="text-xs uppercase tracking-widest text-primary">Nova requisição</p>
             <h1 className="text-lg font-bold text-foreground">Fazer pedido</h1>
-          </div>
-          <button
+          </motion.div>
+          <motion.button
+            whileHover={{ y: -1, borderColor: "hsl(var(--primary))" }}
+            whileTap={tap}
             onClick={repetirUltimo}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition hover:border-primary"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground"
           >
             <RotateCcw size={14} />
             Repetir
-          </button>
+          </motion.button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-md px-6 pt-4">
+
+      <div className="mx-auto max-w-md md:max-w-3xl px-6 pt-4">
         {isAdmin && (
           <div className="mb-3">
             <label className="mb-1 block text-xs uppercase tracking-wider text-muted-foreground">
@@ -291,16 +304,19 @@ function PedidoPage() {
           </div>
         )}
 
+        <AnimatePresence mode="wait" initial={false}>
         {carregando ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Carregando produtos...</p>
+          <motion.div key="sk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <SkeletonStack rows={6} />
+          </motion.div>
         ) : produtos.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
+          <motion.p key="empty1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-sm text-muted-foreground">
             Nenhum produto disponível para o seu perfil.
-          </p>
+          </motion.p>
         ) : produtosFiltrados.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Nada encontrado.</p>
+          <motion.p key="empty2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center text-sm text-muted-foreground">Nada encontrado.</motion.p>
         ) : (
-          <div className="space-y-6">
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-6">
             {produtosAgrupados.map(({ grupo, subgrupos }) => (
               <section key={grupo}>
                 <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-primary">
@@ -327,11 +343,17 @@ function PedidoPage() {
                           const arred = (v: number) =>
                             fracionavel ? Math.round(v * 1000) / 1000 : Math.round(v);
                           return (
-                            <li
+                            <motion.li
                               key={p.id}
-                              className={`flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition ${
-                                ativo ? "border-primary/60" : "border-border"
-                              }`}
+                              layout
+                              animate={{
+                                borderColor: ativo ? "rgba(232,101,10,0.6)" : "hsl(var(--border))",
+                                boxShadow: ativo
+                                  ? "0 4px 16px -6px rgba(232,101,10,0.35)"
+                                  : "0 0 0 0 rgba(0,0,0,0)",
+                              }}
+                              transition={{ duration: 0.25, ease: easeOutExpo }}
+                              className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
                             >
                               <div className="min-w-0 flex-1 pr-3">
                                 <p className="truncate text-sm font-semibold text-foreground">
@@ -372,14 +394,17 @@ function PedidoPage() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <button
+                                <motion.button
+                                  whileTap={{ scale: 0.88 }}
+                                  whileHover={qtd === 0 ? undefined : { scale: 1.05 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 22 }}
                                   onClick={() => setQtd(p.id, Math.max(0, arred(qtd - step)))}
                                   disabled={qtd === 0}
-                                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition hover:border-primary disabled:opacity-40"
+                                  className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:border-primary disabled:opacity-40"
                                   aria-label="Diminuir"
                                 >
                                   <Minus size={14} />
-                                </button>
+                                </motion.button>
                                 <input
                                   type="number"
                                   inputMode="decimal"
@@ -391,17 +416,20 @@ function PedidoPage() {
                                     setQtd(p.id, Number.isFinite(v) && v > 0 ? arred(v) : 0);
                                   }}
                                   placeholder="0"
-                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
+                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none transition-colors focus:border-primary"
                                 />
-                                <button
+                                <motion.button
+                                  whileTap={{ scale: 0.88 }}
+                                  whileHover={{ scale: 1.08, boxShadow: "0 0 0 4px rgba(232,101,10,0.18)" }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 22 }}
                                   onClick={() => setQtd(p.id, arred(qtd + step))}
-                                  className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground transition hover:opacity-90"
+                                  className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground"
                                   aria-label="Aumentar"
                                 >
                                   <Plus size={14} />
-                                </button>
+                                </motion.button>
                               </div>
-                            </li>
+                            </motion.li>
                           );
                         })}
                       </ul>
@@ -410,8 +438,9 @@ function PedidoPage() {
                 </div>
               </section>
             ))}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {itensSelecionados.length > 0 && (
           <div className="mt-6">
@@ -430,26 +459,51 @@ function PedidoPage() {
       </div>
 
       {/* Barra fixa de envio */}
-      {itensSelecionados.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-6 py-4 backdrop-blur">
-          <div className="mx-auto flex max-w-md items-center justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Itens selecionados
-              </p>
-              <p className="text-lg font-bold text-foreground">{itensSelecionados.length}</p>
+      <AnimatePresence>
+        {itensSelecionados.length > 0 && (
+          <motion.div
+            key="submit-bar"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-6 py-4 backdrop-blur"
+          >
+            <div className="mx-auto flex max-w-md md:max-w-3xl items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Itens selecionados
+                </p>
+                <motion.p
+                  key={itensSelecionados.length}
+                  initial={{ scale: 0.6, opacity: 0, y: -4 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                  className="text-lg font-bold text-foreground"
+                >
+                  {itensSelecionados.length}
+                </motion.p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02, boxShadow: "0 12px 30px -8px rgba(232,101,10,0.55)" }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                onClick={handleSalvar}
+                disabled={salvando}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground disabled:opacity-60"
+              >
+                <motion.span
+                  animate={salvando ? { rotate: 360 } : { rotate: 0 }}
+                  transition={salvando ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
+                >
+                  <Check size={18} />
+                </motion.span>
+                {salvando ? "Enviando..." : "Enviar pedido"}
+              </motion.button>
             </div>
-            <button
-              onClick={handleSalvar}
-              disabled={salvando}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-95 disabled:opacity-60"
-            >
-              <Check size={18} />
-              {salvando ? "Enviando..." : "Enviar pedido"}
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

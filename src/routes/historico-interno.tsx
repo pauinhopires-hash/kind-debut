@@ -3,8 +3,15 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonStack } from "@/components/skeleton";
 
 export const Route = createFileRoute("/historico-interno")({
+  head: () => ({
+    meta: [
+      { title: "Minhas requisições de estoque — Misturaria Fina Mezcla" },
+      { name: "description", content: "Acompanhe suas retiradas de insumos." },
+    ],
+  }),
   component: HistoricoInterno,
 });
 
@@ -94,98 +101,112 @@ function HistoricoInterno() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+    <main className="min-h-screen bg-black text-white">
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate({ to: "/" })} className="text-gray-400 hover:text-white">
+          <button
+            onClick={() => navigate({ to: "/" })}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Voltar"
+          >
             <ArrowLeft size={22} />
           </button>
-          <h1 className="text-xl font-bold text-orange-500">Minhas Requisições</h1>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-orange-500">Estoque interno</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white">Minhas Requisições</h1>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-gray-400 text-center py-8">Carregando...</p>
+          <SkeletonStack rows={5} />
         ) : requisicoes.length === 0 ? (
           <div className="text-center py-12">
             <Package size={48} className="text-zinc-700 mx-auto mb-3" />
             <p className="text-gray-500">Você ainda não fez nenhuma requisição.</p>
             <button
               onClick={() => navigate({ to: "/requisicao-interna" })}
-              className="mt-4 bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-xl transition-colors"
+              className="mt-4 bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
             >
               Fazer requisição
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {requisicoes.map(req => (
-              <div key={req.id} className="bg-zinc-900 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => toggleExpandir(req.id)}
-                  className="w-full p-4 text-left"
+          <ul className="space-y-3">
+            {requisicoes.map(req => {
+              const aberto = expandido === req.id;
+              return (
+                <li
+                  key={req.id}
+                  className="bg-zinc-900 rounded-xl overflow-hidden transition-colors hover:bg-zinc-900/80"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {statusIcon(req.status)}
-                      <div>
-                        <p className="text-white text-sm font-medium">
-                          {new Date(req.created_at).toLocaleDateString("pt-BR", {
-                            day: "2-digit", month: "long", year: "numeric"
-                          })}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {new Date(req.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
+                  <button
+                    onClick={() => toggleExpandir(req.id)}
+                    className="w-full p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60"
+                    aria-expanded={aberto}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="shrink-0">{statusIcon(req.status)}</span>
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-medium truncate">
+                            {new Date(req.created_at).toLocaleDateString("pt-BR", {
+                              day: "2-digit", month: "long", year: "numeric"
+                            })}
+                          </p>
+                          <p className="text-gray-400 text-xs">
+                            {new Date(req.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusColor(req.status)}`}>
+                          {statusLabel(req.status)}
+                        </span>
+                        {aberto ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusColor(req.status)}`}>
-                        {statusLabel(req.status)}
-                      </span>
-                      {expandido === req.id ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-                    </div>
-                  </div>
-                  {req.observacao && (
-                    <p className="text-gray-400 text-sm mt-2 italic">"{req.observacao}"</p>
-                  )}
-                </button>
-
-                {expandido === req.id && (
-                  <div className="border-t border-zinc-800 p-4 bg-zinc-950">
-                    {itens[req.id] ? (
-                      itens[req.id].length === 0 ? (
-                        <p className="text-gray-500 text-sm">Sem itens.</p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {itens[req.id].map(item => (
-                            <li key={item.id} className="flex justify-between text-sm">
-                              <span className="text-gray-300">{item.produtos?.nome}</span>
-                              <span className="text-orange-400 font-semibold">
-                                {item.quantidade} {item.produtos?.unidade}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )
-                    ) : (
-                      <p className="text-gray-500 text-sm">Carregando itens...</p>
+                    {req.observacao && (
+                      <p className="text-gray-400 text-sm mt-2 italic truncate">"{req.observacao}"</p>
                     )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  </button>
+
+                  {aberto && (
+                    <div className="border-t border-zinc-800 p-4 bg-zinc-950">
+                      {itens[req.id] ? (
+                        itens[req.id].length === 0 ? (
+                          <p className="text-gray-500 text-sm">Sem itens.</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {itens[req.id].map(item => (
+                              <li key={item.id} className="flex justify-between text-sm">
+                                <span className="text-gray-300">{item.produtos?.nome}</span>
+                                <span className="text-orange-400 font-semibold tabular-nums">
+                                  {item.quantidade} {item.produtos?.unidade}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      ) : (
+                        <SkeletonStack rows={2} />
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
 
         <div className="mt-6">
           <button
             onClick={() => navigate({ to: "/requisicao-interna" })}
-            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl py-3 transition-colors"
+            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
             + Nova Requisição
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
