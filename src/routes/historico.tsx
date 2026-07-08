@@ -141,7 +141,7 @@ function HistoricoPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md px-6 pt-4">
+      <div className="mx-auto max-w-md md:max-w-3xl px-6 pt-4">
         <AnimatePresence mode="wait" initial={false}>
           {carregando ? (
             <motion.div
