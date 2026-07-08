@@ -1,0 +1,31 @@
+# Firebase App Hosting runtime/build config.
+# App Hosting does not read .env — every var the app needs must be declared here.
+# Secrets referenced below must be created first via:
+#   firebase apphosting:secrets:set <NAME>
+#   firebase apphosting:secrets:grantaccess <NAME> --backend <BACKEND_ID>
+runConfig:
+  minInstances: 0
+  maxInstances: 3
+
+env:
+  # Public Supabase project info — safe as plain values, inlined at build time for the client.
+  - variable: VITE_SUPABASE_URL
+    value: "https://yflypyfbwfefydfsxdud.supabase.co"
+    availability: [BUILD, RUNTIME]
+  - variable: VITE_SUPABASE_PROJECT_ID
+    value: "yflypyfbwfefydfsxdud"
+    availability: [BUILD, RUNTIME]
+  - variable: SUPABASE_URL
+    value: "https://yflypyfbwfefydfsxdud.supabase.co"
+    availability: [BUILD, RUNTIME]
+
+  # Keys — kept in Secret Manager, referenced here by name.
+  - variable: VITE_SUPABASE_PUBLISHABLE_KEY
+    secret: VITE_SUPABASE_PUBLISHABLE_KEY
+    availability: [BUILD, RUNTIME]
+  - variable: SUPABASE_PUBLISHABLE_KEY
+    secret: SUPABASE_PUBLISHABLE_KEY
+    availability: [RUNTIME]
+  - variable: SUPABASE_SERVICE_ROLE_KEY
+    secret: SUPABASE_SERVICE_ROLE_KEY
+    availability: [RUNTIME]
