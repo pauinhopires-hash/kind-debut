@@ -1,6 +1,9 @@
 import "./lib/error-capture";
 
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { serve } from "srvx/node";
+import { serveStatic } from "srvx/static";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -78,10 +81,19 @@ async function fetch(request: Request, env: unknown, ctx: unknown): Promise<Resp
   }
 }
 
+// @tanstack/react-start/server-entry only handles SSR routes — unlike Nitro's own
+// generated entry, it does NOT serve the built client assets (dist/client/*), so we
+// serve those ourselves before falling back to the SSR handler.
+const clientDir = join(dirname(fileURLToPath(import.meta.url)), "../client");
+
 // Firebase App Hosting (Cloud Run) runs this file as a plain Node process — unlike
 // Cloudflare Workers, nothing else calls .fetch() for us, so we must bind our own
 // HTTP server on $PORT (same approach Nitro's own node-server preset uses).
 const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
-serve({ port, fetch: (request: Request) => fetch(request, undefined, undefined) });
+serve({
+  port,
+  middleware: [serveStatic({ dir: clientDir })],
+  fetch: (request: Request) => fetch(request, undefined, undefined),
+});
 
 export default { fetch };
