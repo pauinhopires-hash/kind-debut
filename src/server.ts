@@ -1,5 +1,6 @@
 import "./lib/error-capture";
 
+import { serve } from "srvx/node";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -66,15 +67,21 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
-export default {
-  async fetch(request: Request, env: unknown, ctx: unknown) {
-    try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
-    } catch (error) {
-      console.error(error);
-      return brandedErrorResponse();
-    }
-  },
-};
+async function fetch(request: Request, env: unknown, ctx: unknown): Promise<Response> {
+  try {
+    const handler = await getServerEntry();
+    const response = await handler.fetch(request, env, ctx);
+    return await normalizeCatastrophicSsrResponse(response);
+  } catch (error) {
+    console.error(error);
+    return brandedErrorResponse();
+  }
+}
+
+// Firebase App Hosting (Cloud Run) runs this file as a plain Node process — unlike
+// Cloudflare Workers, nothing else calls .fetch() for us, so we must bind our own
+// HTTP server on $PORT (same approach Nitro's own node-server preset uses).
+const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
+serve({ port, fetch: (request: Request) => fetch(request, undefined, undefined) });
+
+export default { fetch };
