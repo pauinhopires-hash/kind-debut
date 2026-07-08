@@ -10,13 +10,13 @@ runConfig:
 env:
   # Public Supabase project info — safe as plain values, inlined at build time for the client.
   - variable: VITE_SUPABASE_URL
-    value: "https://yflypyfbwfefydfsxdud.supabase.co"
+    value: "https://pjrcaczjyyhiybfloudh.supabase.co"
     availability: [BUILD, RUNTIME]
   - variable: VITE_SUPABASE_PROJECT_ID
-    value: "yflypyfbwfefydfsxdud"
+    value: "pjrcaczjyyhiybfloudh"
     availability: [BUILD, RUNTIME]
   - variable: SUPABASE_URL
-    value: "https://yflypyfbwfefydfsxdud.supabase.co"
+    value: "https://pjrcaczjyyhiybfloudh.supabase.co"
     availability: [BUILD, RUNTIME]
 
   # Keys — kept in Secret Manager, referenced here by name.
