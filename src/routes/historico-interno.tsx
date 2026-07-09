@@ -192,9 +192,9 @@ function HistoricoInterno() {
                           ) : (
                             <ul className="space-y-2">
                               {itens[req.id].map(item => (
-                                <li key={item.id} className="flex justify-between text-sm">
-                                  <span className="text-gray-300">{item.produtos?.nome}</span>
-                                  <span className="text-orange-400 font-semibold tabular-nums">
+                                <li key={item.id} className="flex justify-between gap-2 text-sm">
+                                  <span className="min-w-0 flex-1 break-words text-gray-300">{item.produtos?.nome}</span>
+                                  <span className="shrink-0 whitespace-nowrap text-orange-400 font-semibold tabular-nums">
                                     {item.quantidade} {item.produtos?.unidade}
                                   </span>
                                 </li>

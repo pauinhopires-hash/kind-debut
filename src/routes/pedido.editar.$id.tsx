@@ -210,7 +210,7 @@ function EditarPedido() {
                 }`}
               >
                 <div className="min-w-0 flex-1 pr-3">
-                  <p className="truncate text-sm font-semibold text-foreground">{p.nome}</p>
+                  <p className="break-words text-sm font-semibold text-foreground">{p.nome}</p>
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <span>Unid.:</span>
                     <select

@@ -356,7 +356,7 @@ function PedidoPage() {
                               className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
                             >
                               <div className="min-w-0 flex-1 pr-3">
-                                <p className="truncate text-sm font-semibold text-foreground">
+                                <p className="break-words text-sm font-semibold text-foreground">
                                   {p.nome}
                                 </p>
                                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
