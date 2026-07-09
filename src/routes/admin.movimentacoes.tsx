@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { ArrowLeft, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonStack } from "@/components/skeleton";
+import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/movimentacoes")({
   component: AdminMovimentacoes,
@@ -69,11 +72,17 @@ function AdminMovimentacoes() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate({ to: "/admin" })} className="text-gray-400 hover:text-white">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
+            onClick={() => navigate({ to: "/admin" })}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Voltar"
+          >
             <ArrowLeft size={22} />
-          </button>
+          </motion.button>
           <h1 className="text-xl font-bold text-orange-500">Movimentações de Estoque</h1>
         </div>
 
@@ -81,16 +90,17 @@ function AdminMovimentacoes() {
         <div className="bg-zinc-900 rounded-xl p-4 mb-4 flex flex-col gap-3">
           <div className="flex gap-2">
             {["todos", "entrada", "saida", "ajuste"].map(t => (
-              <button
+              <motion.button
                 key={t}
+                whileTap={tap}
                 onClick={() => setFiltroTipo(t)}
-                className={`flex-1 text-sm py-1.5 rounded-lg transition-colors capitalize ${filtroTipo === t
+                className={`flex-1 text-sm py-1.5 rounded-lg transition-colors capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${filtroTipo === t
                     ? "bg-orange-600 text-white"
                     : "bg-zinc-800 text-gray-400 hover:text-white"
                 }`}
               >
                 {t === "todos" ? "Todos" : tipoLabel(t)}
-              </button>
+              </motion.button>
             ))}
           </div>
           <input
@@ -98,35 +108,41 @@ function AdminMovimentacoes() {
             placeholder="Filtrar por produto..."
             value={filtroProduto}
             onChange={e => setFiltroProduto(e.target.value)}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
         </div>
 
         {/* Stats rápidos */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <motion.div initial="hidden" animate="visible" variants={staggerList()} className="grid grid-cols-3 gap-3 mb-4">
           {[
             { label: "Entradas", tipo: "entrada", color: "text-green-400" },
             { label: "Saídas", tipo: "saida", color: "text-red-400" },
             { label: "Ajustes", tipo: "ajuste", color: "text-blue-400" },
           ].map(s => (
-            <div key={s.tipo} className="bg-zinc-900 rounded-xl p-3 text-center">
+            <motion.div key={s.tipo} variants={listItem} className="bg-zinc-900 rounded-xl p-3 text-center">
               <p className={`text-xl font-bold ${s.color}`}>
                 {movimentacoes.filter(m => m.tipo === s.tipo).length}
               </p>
               <p className="text-gray-400 text-xs">{s.label}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Lista */}
         {loading ? (
-          <p className="text-gray-400 text-center py-8">Carregando...</p>
+          <SkeletonStack rows={6} />
         ) : movFiltradas.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">Nenhuma movimentação encontrada.</p>
+          <motion.p initial="hidden" animate="visible" variants={fadeIn} className="text-gray-500 text-center py-8">
+            Nenhuma movimentação encontrada.
+          </motion.p>
         ) : (
-          <div className="space-y-2">
+          <motion.div initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
             {movFiltradas.map(mov => (
-              <div key={mov.id} className="bg-zinc-900 rounded-xl p-4">
+              <motion.div
+                key={mov.id}
+                variants={listItem}
+                className="bg-zinc-900 rounded-xl p-4 transition-shadow hover:shadow-md hover:shadow-primary/5"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className="mt-1">{tipoIcon(mov.tipo)}</div>
@@ -154,9 +170,9 @@ function AdminMovimentacoes() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fadeIn, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
@@ -43,43 +46,60 @@ function ForgotPasswordPage() {
           </p>
         </div>
 
-        {enviado ? (
-          <div className="space-y-4 text-center">
-            <p className="rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground">
-              Enviamos um link para <strong>{email}</strong>. Verifique sua caixa de entrada e spam.
-            </p>
-            <Link to="/login" className="text-xs uppercase tracking-widest text-primary hover:underline">
-              Voltar ao login
-            </Link>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary"
-              />
-            </div>
-            {erro && <p className="text-sm text-destructive">{erro}</p>}
-            <button
-              type="submit"
-              disabled={carregando}
-              className="mt-4 w-full rounded-md bg-primary px-4 py-3 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+        <AnimatePresence mode="wait">
+          {enviado ? (
+            <motion.div
+              key="enviado"
+              initial="hidden"
+              animate="visible"
+              variants={fadeIn}
+              className="space-y-4 text-center"
             >
-              {carregando ? "Enviando..." : "Enviar link"}
-            </button>
-            <p className="pt-2 text-center">
-              <Link to="/login" className="text-xs uppercase tracking-widest text-muted-foreground hover:text-primary">
+              <p className="rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground">
+                Enviamos um link para <strong>{email}</strong>. Verifique sua caixa de entrada e spam.
+              </p>
+              <Link to="/login" className="text-xs uppercase tracking-widest text-primary hover:underline">
                 Voltar ao login
               </Link>
-            </p>
-          </form>
-        )}
+            </motion.div>
+          ) : (
+            <motion.form
+              key="form"
+              initial="hidden"
+              animate="visible"
+              variants={fadeIn}
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  className="w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                />
+              </div>
+              {erro && <p className="text-sm text-destructive">{erro}</p>}
+              <motion.button
+                type="submit"
+                disabled={carregando}
+                whileTap={tap}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-3 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-60"
+              >
+                {carregando && <Loader2 className="h-4 w-4 animate-spin" />}
+                {carregando ? "Enviando..." : "Enviar link"}
+              </motion.button>
+              <p className="pt-2 text-center">
+                <Link to="/login" className="text-xs uppercase tracking-widest text-muted-foreground hover:text-primary">
+                  Voltar ao login
+                </Link>
+              </p>
+            </motion.form>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   );

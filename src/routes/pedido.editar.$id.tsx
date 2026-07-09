@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus, Check } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { SkeletonStack } from "@/components/skeleton";
+import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/pedido/editar/$id")({
   head: () => ({ meta: [{ title: "Editar pedido — Misturaria Fina Mezcla" }] }),
@@ -128,23 +131,29 @@ function EditarPedido() {
 
   if (loading || !user || carregando) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Carregando...</p>
+      <div className="mx-auto min-h-screen max-w-md space-y-3 bg-background px-6 pt-8">
+        <SkeletonStack rows={5} />
       </div>
     );
   }
 
   if (naoEditavel) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+        className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6"
+      >
         <p className="text-sm text-muted-foreground">Esta requisição não pode mais ser editada.</p>
-        <button
+        <motion.button
+          whileTap={tap}
           onClick={() => navigate({ to: "/historico" })}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-bold uppercase text-primary-foreground"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-bold uppercase text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
         >
           Voltar ao histórico
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     );
   }
 
@@ -152,13 +161,15 @@ function EditarPedido() {
     <main className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center gap-3">
-          <button
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/historico" })}
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
-          </button>
+          </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-primary">Edição</p>
             <h1 className="text-lg font-bold text-foreground">Editar pedido</h1>
@@ -172,9 +183,14 @@ function EditarPedido() {
           placeholder="Buscar produto..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="mb-4 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none focus:border-primary"
+          className="mb-4 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
         />
-        <ul className="space-y-2">
+        <motion.ul
+          initial="hidden"
+          animate="visible"
+          variants={staggerList()}
+          className="space-y-2"
+        >
           {produtosFiltrados.map((p) => {
             const qtd = quantidades[p.id] ?? 0;
             const ativo = qtd > 0;
@@ -186,9 +202,10 @@ function EditarPedido() {
             const arred = (v: number) =>
               fracionavel ? Math.round(v * 1000) / 1000 : Math.round(v);
             return (
-              <li
+              <motion.li
                 key={p.id}
-                className={`flex items-center justify-between rounded-xl border bg-card px-4 py-3 ${
+                variants={listItem}
+                className={`flex items-center justify-between rounded-xl border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5 ${
                   ativo ? "border-primary/60" : "border-border"
                 }`}
               >
@@ -207,7 +224,7 @@ function EditarPedido() {
                           return novo;
                         });
                       }}
-                      className={`rounded border bg-background px-1.5 py-0.5 text-[11px] font-semibold uppercase outline-none focus:border-primary ${
+                      className={`rounded border bg-background px-1.5 py-0.5 text-[11px] font-semibold uppercase outline-none transition focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
                         alterada ? "border-primary text-primary" : "border-border text-foreground"
                       }`}
                     >
@@ -222,14 +239,17 @@ function EditarPedido() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    whileHover={qtd === 0 ? undefined : { scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 22 }}
                     onClick={() => setQtd(p.id, Math.max(0, arred(qtd - step)))}
                     disabled={qtd === 0}
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground disabled:opacity-40"
-                    aria-label="-"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:border-primary disabled:opacity-40"
+                    aria-label="Diminuir"
                   >
                     <Minus size={14} />
-                  </button>
+                  </motion.button>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -241,20 +261,23 @@ function EditarPedido() {
                       setQtd(p.id, Number.isFinite(v) && v > 0 ? arred(v) : 0);
                     }}
                     placeholder="0"
-                    className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-primary"
+                    className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none transition-colors focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
                   />
-                  <button
+                  <motion.button
+                    whileTap={{ scale: 0.88 }}
+                    whileHover={{ scale: 1.08, boxShadow: "0 0 0 4px rgba(232,101,10,0.18)" }}
+                    transition={{ type: "spring", stiffness: 500, damping: 22 }}
                     onClick={() => setQtd(p.id, arred(qtd + step))}
-                    className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
-                    aria-label="+"
+                    className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                    aria-label="Aumentar"
                   >
                     <Plus size={14} />
-                  </button>
+                  </motion.button>
                 </div>
-              </li>
+              </motion.li>
             );
           })}
-        </ul>
+        </motion.ul>
 
         <div className="mt-6">
           <label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
@@ -264,7 +287,7 @@ function EditarPedido() {
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
             rows={3}
-            className="w-full resize-none rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
+            className="w-full resize-none rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
         </div>
       </div>
@@ -275,14 +298,16 @@ function EditarPedido() {
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Itens</p>
             <p className="text-lg font-bold text-foreground">{itensSelecionados.length}</p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
             onClick={salvar}
             disabled={salvando}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-95 disabled:opacity-60"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-60"
           >
-            <Check size={18} />
+            {salvando ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
             {salvando ? "Salvando..." : "Salvar alterações"}
-          </button>
+          </motion.button>
         </div>
       </div>
     </main>

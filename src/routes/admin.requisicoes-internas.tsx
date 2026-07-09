@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -8,9 +9,12 @@ import {
   ChevronUp,
   PackageCheck,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonStack } from "@/components/skeleton";
+import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/requisicoes-internas")({
   component: AdminRequisicoesInternas,
@@ -149,28 +153,39 @@ function AdminRequisicoesInternas() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate({ to: "/admin" })} className="text-gray-400 hover:text-white">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
+            onClick={() => navigate({ to: "/admin" })}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Voltar"
+          >
             <ArrowLeft size={22} />
-          </button>
+          </motion.button>
           <h1 className="text-xl font-bold text-orange-500">Requisições Internas</h1>
         </div>
 
         {loading ? (
-          <div className="text-center text-gray-400 py-12">Carregando...</div>
+          <SkeletonStack rows={6} />
         ) : requisicoes.length === 0 ? (
-          <div className="text-center text-gray-400 py-12">
+          <motion.div initial="hidden" animate="visible" variants={fadeIn} className="text-center text-gray-400 py-12">
             <PackageCheck size={48} className="mx-auto mb-3 opacity-30" />
             <p>Nenhuma requisição</p>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-3">
+          <motion.div initial="hidden" animate="visible" variants={staggerList()} className="space-y-3">
             {requisicoes.map(req => (
-              <div key={req.id} className="bg-zinc-900 rounded-xl overflow-hidden">
-                <div
-                  className="p-4 flex items-center gap-3 cursor-pointer"
+              <motion.div
+                key={req.id}
+                variants={listItem}
+                className="bg-zinc-900 rounded-xl overflow-hidden transition-shadow hover:shadow-md hover:shadow-primary/5"
+              >
+                <button
+                  className="w-full p-4 flex items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                   onClick={() => setExpandedId(expandedId === req.id ? null : req.id)}
+                  aria-expanded={expandedId === req.id}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -185,48 +200,54 @@ function AdminRequisicoesInternas() {
                     <p className="text-gray-400 text-sm">{req.requisicao_interna_itens.length} item(s)</p>
                   </div>
                   {expandedId === req.id ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-                </div>
+                </button>
 
-                {expandedId === req.id && (
-                  <div className="border-t border-zinc-800 p-4">
-                    {req.observacao && (
-                      <p className="text-gray-400 text-sm mb-3 italic">"{req.observacao}"</p>
-                    )}
-                    <div className="space-y-2 mb-4">
-                      {req.requisicao_interna_itens.map(item => (
-                        <div key={item.id} className="flex justify-between items-center bg-zinc-800 rounded-lg px-3 py-2">
-                          <span className="text-white text-sm">{item.produtos?.nome || item.produto_id}</span>
-                          <span className="text-orange-400 text-sm font-medium">
-                            {item.quantidade} {item.produtos?.unidade || ""}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {req.status === "pendente" && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => aprovar(req)}
-                          disabled={processing === req.id}
-                          className="flex-1 bg-green-700 hover:bg-green-600 disabled:bg-zinc-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 text-sm"
-                        >
-                          <Check size={16} /> Aprovar
-                        </button>
-                        <button
-                          onClick={() => rejeitar(req)}
-                          disabled={processing === req.id}
-                          className="flex-1 bg-red-800 hover:bg-red-700 disabled:bg-zinc-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 text-sm"
-                        >
-                          <XCircle size={16} /> Rejeitar
-                        </button>
+                <AnimatePresence initial={false}>
+                  {expandedId === req.id && (
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={collapseY} className="border-t border-zinc-800 p-4">
+                      {req.observacao && (
+                        <p className="text-gray-400 text-sm mb-3 italic">"{req.observacao}"</p>
+                      )}
+                      <div className="space-y-2 mb-4">
+                        {req.requisicao_interna_itens.map(item => (
+                          <div key={item.id} className="flex justify-between items-center bg-zinc-800 rounded-lg px-3 py-2">
+                            <span className="text-white text-sm">{item.produtos?.nome || item.produto_id}</span>
+                            <span className="text-orange-400 text-sm font-medium">
+                              {item.quantidade} {item.produtos?.unidade || ""}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                      {req.status === "pendente" && (
+                        <div className="flex gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={tap}
+                            onClick={() => aprovar(req)}
+                            disabled={processing === req.id}
+                            className="flex-1 bg-green-700 hover:bg-green-600 disabled:bg-zinc-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/40"
+                          >
+                            {processing === req.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} Aprovar
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={tap}
+                            onClick={() => rejeitar(req)}
+                            disabled={processing === req.id}
+                            className="flex-1 bg-red-800 hover:bg-red-700 disabled:bg-zinc-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                          >
+                            {processing === req.id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />} Rejeitar
+                          </motion.button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
   );
-        }
+}

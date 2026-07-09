@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, ChevronDown, ChevronUp, Minus, Pencil, Plus, Share2, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonStack } from "@/components/skeleton";
+import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/requisicoes")({
   component: AdminRequisicoes,
@@ -166,14 +169,16 @@ function AdminRequisicoes() {
   return (
     <main className="min-h-screen bg-background pb-12">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center gap-3">
-          <button
+        <div className="mx-auto flex max-w-md md:max-w-2xl items-center gap-3">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/admin" })}
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
-          </button>
+          </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>
             <h1 className="text-lg font-bold text-foreground">Requisições</h1>
@@ -181,7 +186,7 @@ function AdminRequisicoes() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md px-6 pt-4">
+      <div className="mx-auto max-w-md md:max-w-2xl px-6 pt-4">
         <p className="mb-3 rounded-md border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground">
           Requisições aprovadas continuam aparecendo na <span className="font-semibold text-foreground">Lista de Compras</span> até serem marcadas como compradas.
         </p>
@@ -189,35 +194,42 @@ function AdminRequisicoes() {
 
         <div className="mb-3 flex gap-1 overflow-x-auto">
           {filtros.map((f) => (
-            <button
+            <motion.button
               key={f.id}
+              whileTap={tap}
               onClick={() => setFiltro(f.id)}
-              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
                 filtro === f.id
                   ? "bg-primary text-primary-foreground"
                   : "border border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
               {f.label}
-            </button>
+            </motion.button>
           ))}
         </div>
 
         {carregando ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Carregando...</p>
+          <SkeletonStack rows={6} />
         ) : reqs.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma requisição.</p>
+          <motion.p initial="hidden" animate="visible" variants={fadeIn} className="py-12 text-center text-sm text-muted-foreground">
+            Nenhuma requisição.
+          </motion.p>
         ) : (
-          <ul className="space-y-2">
+          <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
             {reqs.map((r) => {
               const isAberto = aberto === r.id;
               const lista = itens[r.id] ?? [];
               const pendente = r.status === "pendente";
               return (
-                <li key={r.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                <motion.li
+                  key={r.id}
+                  variants={listItem}
+                  className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md hover:shadow-primary/5"
+                >
                   <button
                     onClick={() => toggle(r.id)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-card/60"
+                    className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-card/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">
@@ -242,10 +254,11 @@ function AdminRequisicoes() {
                       <ChevronDown size={18} className="text-muted-foreground" />
                     )}
                   </button>
+                  <AnimatePresence initial={false}>
                   {isAberto && (
-                    <div className="border-t border-border px-4 py-3">
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={collapseY} className="border-t border-border px-4 py-3">
                       {lista.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Carregando itens...</p>
+                        <SkeletonStack rows={2} />
                       ) : (
                         <ul className="space-y-1.5">
                           {lista.map((it) => (
@@ -258,7 +271,7 @@ function AdminRequisicoes() {
                                   {pendente && (
                                     <button
                                       onClick={() => editarNome(r.id, it)}
-                                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-card hover:text-primary"
+                                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-card hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                                       aria-label="Editar nome"
                                       title="Editar nome só nesta requisição"
                                     >
@@ -274,14 +287,15 @@ function AdminRequisicoes() {
                               </div>
                               {pendente ? (
                                 <div className="flex items-center gap-1">
-                                  <button
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => atualizarQtd(r.id, it.id, it.quantidade - 1)}
                                     disabled={it.quantidade <= 1}
-                                    className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground disabled:opacity-40"
+                                    className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-40"
                                     aria-label="Diminuir"
                                   >
                                     <Minus size={12} />
-                                  </button>
+                                  </motion.button>
                                   <input
                                     type="number"
                                     inputMode="decimal"
@@ -291,25 +305,27 @@ function AdminRequisicoes() {
                                       const v = Number(e.target.value);
                                       if (Number.isFinite(v) && v > 0) atualizarQtd(r.id, it.id, v);
                                     }}
-                                    className="h-7 w-12 rounded-md border border-border bg-background text-center text-xs font-semibold tabular-nums text-foreground outline-none focus:border-primary"
+                                    className="h-7 w-12 rounded-md border border-border bg-background text-center text-xs font-semibold tabular-nums text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
                                   />
-                                  <button
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => atualizarQtd(r.id, it.id, it.quantidade + 1)}
-                                    className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground hover:opacity-90"
+                                    className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                                     aria-label="Aumentar"
                                   >
                                     <Plus size={12} />
-                                  </button>
+                                  </motion.button>
                                   <span className={`ml-1 w-16 text-[10px] uppercase ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "font-bold text-primary" : "text-muted-foreground"}`}>
                                     {it.unidade || it.produtos?.unidade || ""}
                                   </span>
-                                  <button
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => excluirItem(r.id, it.id, it.produtos?.nome ?? "item")}
-                                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10"
+                                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
                                     aria-label="Excluir"
                                   >
                                     <Trash2 size={12} />
-                                  </button>
+                                  </motion.button>
                                 </div>
                               ) : (
                                 <span className={`font-mono tabular-nums ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "text-primary font-bold" : "text-muted-foreground"}`}>
@@ -327,35 +343,42 @@ function AdminRequisicoes() {
                       )}
                       {pendente && (
                         <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-                          <button
+                          <motion.button
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={tap}
                             onClick={() => compartilharWhatsApp(r)}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-card"
+                            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                           >
                             <Share2 size={12} /> Compartilhar no WhatsApp
-                          </button>
+                          </motion.button>
                           <div className="flex gap-2">
-                            <button
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={tap}
                               onClick={() => mudarStatus(r, "aprovada")}
-                              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90"
+                              className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                             >
                               <Check size={12} /> Aprovar
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={tap}
                               onClick={() => mudarStatus(r, "cancelada")}
-                              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10"
+                              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
                             >
                               <XCircle size={12} /> Cancelar
-                            </button>
+                            </motion.button>
                           </div>
                         </div>
                       )}
 
-                    </div>
+                    </motion.div>
                   )}
-                </li>
+                  </AnimatePresence>
+                </motion.li>
               );
             })}
-          </ul>
+          </motion.ul>
         )}
       </div>
     </main>

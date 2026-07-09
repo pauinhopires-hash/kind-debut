@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   ShoppingCart,
@@ -12,6 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -189,46 +191,68 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
-        <div className="flex items-center justify-between mb-6 pt-4">
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="flex items-center justify-between mb-6 pt-4"
+        >
           <div>
             <h1 className="text-2xl font-bold text-orange-500">Admin</h1>
             {nomeUsuario && <p className="text-gray-400 text-sm">{nomeUsuario}</p>}
           </div>
-          <button
+          <motion.button
+            whileHover={{ x: 2, color: "#fff" }}
+            whileTap={tap}
             onClick={handleLogout}
-            className="text-gray-400 hover:text-white flex items-center gap-1 text-sm transition-colors"
+            className="text-gray-400 flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-md px-2 py-1"
+            aria-label="Sair da conta"
           >
             <LogOut size={16} /> Sair
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-zinc-900 rounded-xl p-3 text-center">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerList()}
+          className="grid grid-cols-3 gap-3 mb-6"
+        >
+          <motion.div variants={listItem} className="bg-zinc-900 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-orange-400">{stats.requisicoesPendentes}</p>
             <p className="text-gray-400 text-xs">Compras pendentes</p>
-          </div>
-          <div className="bg-zinc-900 rounded-xl p-3 text-center">
+          </motion.div>
+          <motion.div variants={listItem} className="bg-zinc-900 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-amber-400">{stats.requisicoesInternas}</p>
             <p className="text-gray-400 text-xs">Req. internas</p>
-          </div>
-          <div className="bg-zinc-900 rounded-xl p-3 text-center">
+          </motion.div>
+          <motion.div variants={listItem} className="bg-zinc-900 rounded-xl p-3 text-center">
             <p className="text-2xl font-bold text-red-400">{stats.produtosBaixoEstoque}</p>
             <p className="text-gray-400 text-xs">Estoque baixo</p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {menus.map((group) => (
           <div key={group.group} className="mb-5">
             <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-2 px-1">
               {group.group}
             </h2>
-            <div className="space-y-2">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={staggerList()}
+              className="space-y-2"
+            >
               {group.items.map((item) => (
-                <button
+                <motion.button
                   key={item.rota}
+                  variants={listItem}
+                  whileHover={{ y: -2, scale: 1.01 }}
+                  whileTap={tap}
+                  transition={{ type: "spring", stiffness: 400, damping: 26 }}
                   onClick={() => navigate({ to: item.rota })}
-                  className="w-full bg-zinc-900 hover:bg-zinc-800 rounded-xl p-4 flex items-center gap-4 transition-all text-left"
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 rounded-xl p-4 flex items-center gap-4 text-left shadow-md shadow-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                 >
                   <div className={`${item.cor} rounded-lg p-2.5`}>
                     <item.icon size={20} className="text-white" />
@@ -242,9 +266,9 @@ function AdminDashboard() {
                       {item.badge}
                     </span>
                   )}
-                </button>
+                </motion.button>
               ))}
-            </div>
+            </motion.div>
           </div>
         ))}
       </div>

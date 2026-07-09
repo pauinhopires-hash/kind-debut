@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, AlertTriangle, Package } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, Package, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonStack } from "@/components/skeleton";
+import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/estoque")({
   component: AdminEstoque,
@@ -90,24 +93,34 @@ function AdminEstoque() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate({ to: "/admin" })} className="text-gray-400 hover:text-white">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
+            onClick={() => navigate({ to: "/admin" })}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Voltar"
+          >
             <ArrowLeft size={22} />
-          </button>
+          </motion.button>
           <h1 className="text-xl font-bold text-orange-500">Gestão de Estoque</h1>
         </div>
         {loading ? (
-          <div className="text-center text-gray-400 py-12">Carregando...</div>
+          <SkeletonStack rows={6} />
         ) : produtos.length === 0 ? (
-          <div className="text-center text-gray-400 py-12">
+          <motion.div initial="hidden" animate="visible" variants={fadeIn} className="text-center text-gray-400 py-12">
             <Package size={48} className="mx-auto mb-3 opacity-30" />
             <p>Nenhum produto cadastrado</p>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-2">
+          <motion.div initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
             {produtos.map(p => (
-              <div key={p.id} className="bg-zinc-900 rounded-xl p-4 flex items-center gap-3">
+              <motion.div
+                key={p.id}
+                variants={listItem}
+                className="bg-zinc-900 rounded-xl p-4 flex items-center gap-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {p.quantidade <= 0 && <AlertTriangle size={14} className="text-orange-400 flex-shrink-0" />}
@@ -125,19 +138,21 @@ function AdminEstoque() {
                     placeholder={String(p.quantidade)}
                     value={p.novaQuantidade}
                     onChange={e => handleNovaQuantidade(p.id, e.target.value)}
-                    className="w-24 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-orange-500"
+                    className="w-24 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm text-center transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
                   />
-                  <button
+                  <motion.button
+                    whileHover={p.novaQuantidade ? { scale: 1.05 } : undefined}
+                    whileTap={tap}
                     onClick={() => salvarEstoque(p)}
                     disabled={!p.novaQuantidade || saving === p.id}
-                    className="bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 text-white rounded-lg p-2"
+                    className="bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 text-white rounded-lg p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                   >
-                    <Save size={16} />
-                  </button>
+                    {saving === p.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

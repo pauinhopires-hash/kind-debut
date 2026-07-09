@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Send, PackageSearch } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Send, PackageSearch, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/requisicao-interna")({
   head: () => ({
@@ -98,13 +100,15 @@ function RequisicaoInterna() {
     <main className="min-h-screen bg-black text-white">
       <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/" })}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
-          </button>
+          </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-orange-500">Estoque interno</p>
             <h1 className="text-xl md:text-2xl font-bold text-white">Requisição Interna</h1>
@@ -117,10 +121,10 @@ function RequisicaoInterna() {
           {carregandoProdutos ? (
             <SkeletonStack rows={2} />
           ) : produtos.length === 0 ? (
-            <div className="py-6 text-center">
+            <motion.div initial="hidden" animate="visible" variants={fadeIn} className="py-6 text-center">
               <PackageSearch size={28} className="mx-auto text-zinc-600" />
               <p className="mt-2 text-sm text-gray-400">Nenhum produto disponível.</p>
-            </div>
+            </motion.div>
           ) : (
             <>
               <select
@@ -141,17 +145,19 @@ function RequisicaoInterna() {
                   min={1}
                   value={quantidade}
                   onChange={e => setQuantidade(Number(e.target.value))}
-                  className="w-28 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500"
+                  className="w-28 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
                   aria-label="Quantidade"
                 />
                 {produtoSel && <span className="flex items-center text-gray-400 text-sm">{produtoSel.unidade}</span>}
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={tap}
                   onClick={adicionarItem}
                   disabled={!produtoSelecionado}
                   className="flex-1 min-w-[8rem] bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2 flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                 >
                   <Plus size={16} /> Adicionar
-                </button>
+                </motion.button>
               </div>
               {produtoSel && produtoSel.estoque_disponivel > 0 && (
                 <p className="text-xs text-gray-500 mt-2">Estoque atual: {produtoSel.estoque_disponivel} {produtoSel.unidade}</p>
@@ -163,23 +169,32 @@ function RequisicaoInterna() {
         {itens.length > 0 && (
           <div className="bg-zinc-900 rounded-xl p-4 md:p-5 mb-4">
             <h2 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Itens ({itens.length})</h2>
-            <ul className="space-y-2">
-              {itens.map(item => (
-                <li key={item.produto_id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 transition-colors hover:bg-zinc-800/80">
-                  <div className="min-w-0">
-                    <p className="text-white font-medium truncate">{item.nome}</p>
-                    <p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p>
-                  </div>
-                  <button
-                    onClick={() => removerItem(item.produto_id)}
-                    className="text-red-400 hover:text-red-300 rounded-md p-2 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                    aria-label={`Remover ${item.nome}`}
+            <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
+              <AnimatePresence>
+                {itens.map(item => (
+                  <motion.li
+                    key={item.produto_id}
+                    variants={listItem}
+                    exit="exit"
+                    layout
+                    className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 transition-colors hover:bg-zinc-800/80 hover:shadow-md hover:shadow-primary/5"
                   >
-                    <Trash2 size={16} />
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <div className="min-w-0">
+                      <p className="text-white font-medium truncate">{item.nome}</p>
+                      <p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p>
+                    </div>
+                    <motion.button
+                      whileTap={tap}
+                      onClick={() => removerItem(item.produto_id)}
+                      className="text-red-400 hover:text-red-300 rounded-md p-2 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      aria-label={`Remover ${item.nome}`}
+                    >
+                      <Trash2 size={16} />
+                    </motion.button>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </motion.ul>
           </div>
         )}
 
@@ -190,18 +205,20 @@ function RequisicaoInterna() {
             onChange={e => setObservacao(e.target.value)}
             rows={3}
             placeholder="Detalhes, urgência, etc."
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none focus:outline-none focus:border-orange-500"
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white resize-none transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={tap}
           onClick={enviarRequisicao}
           disabled={loading || itens.length === 0}
           className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
         >
-          <Send size={18} className={loading ? "animate-pulse" : ""} />
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           {loading ? "Enviando..." : `Enviar Requisição (${itens.length} item${itens.length !== 1 ? "s" : ""})`}
-        </button>
+        </motion.button>
       </div>
     </main>
   );

@@ -1,9 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Check, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { SkeletonStack } from "@/components/skeleton";
+import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/produtos")({
   component: AdminProdutos,
@@ -155,41 +158,45 @@ function AdminProdutos() {
   return (
     <main className="min-h-screen bg-background pb-12">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-md items-center gap-3">
-          <button
+        <div className="mx-auto flex max-w-md md:max-w-2xl items-center gap-3">
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/admin" })}
-            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
-          </button>
+          </motion.button>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>
             <h1 className="text-lg font-bold text-foreground">Produtos ({produtos.length})</h1>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
             onClick={abrirNovo}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90"
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
             <Plus size={14} /> Novo
-          </button>
+          </motion.button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-md space-y-3 px-6 pt-4">
+      <div className="mx-auto max-w-md md:max-w-2xl space-y-3 px-6 pt-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar produto..."
-            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary"
+            className="w-full rounded-md border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
         </div>
         <select
           value={filtroPerfil}
           onChange={(e) => setFiltroPerfil(e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
         >
           <option value="">Todos os perfis</option>
           {perfis.map((pf) => (
@@ -198,15 +205,18 @@ function AdminProdutos() {
         </select>
 
         {carregando ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Carregando...</p>
+          <SkeletonStack rows={6} />
         ) : filtrados.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
+          <motion.p initial="hidden" animate="visible" variants={fadeIn} className="py-12 text-center text-sm text-muted-foreground">
+            Nenhum produto encontrado.
+          </motion.p>
         ) : (
-          <ul className="space-y-2">
+          <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
             {filtrados.map((p) => (
-              <li
+              <motion.li
                 key={p.id}
-                className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3"
+                variants={listItem}
+                className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">
@@ -225,37 +235,59 @@ function AdminProdutos() {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={tap}
                     onClick={() => abrirEditar(p)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground transition hover:border-primary"
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
                     aria-label="Editar"
                   >
                     <Pencil size={14} />
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={tap}
                     onClick={() => excluir(p)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-destructive transition hover:border-destructive"
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-destructive transition hover:border-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
                     aria-label="Excluir"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </motion.button>
                 </div>
-              </li>
+              </motion.li>
             ))}
-          </ul>
+          </motion.ul>
         )}
       </div>
 
-      {(novo || editando) && (
-        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center">
-          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-card p-6 sm:rounded-2xl">
+      <AnimatePresence>
+        {(novo || editando) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 sm:items-center"
+          >
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-border bg-card p-6 sm:rounded-2xl"
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-bold text-foreground">
                 {editando ? "Editar produto" : "Novo produto"}
               </h2>
-              <button onClick={fechar} aria-label="Fechar" className="text-muted-foreground">
+              <motion.button
+                whileTap={tap}
+                onClick={fechar}
+                aria-label="Fechar"
+                className="text-muted-foreground rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+              >
                 <X size={18} />
-              </button>
+              </motion.button>
             </div>
             <div className="space-y-3">
               <Field label="Nome">
@@ -341,21 +373,24 @@ function AdminProdutos() {
                 Ativo
               </label>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={tap}
               onClick={salvar}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold uppercase text-primary-foreground transition hover:opacity-95"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold uppercase text-primary-foreground transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             >
               <Check size={16} /> Salvar
-            </button>
-          </div>
-        </div>
-      )}
+            </motion.button>
+          </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
 
 const inputCls =
-  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary";
+  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/historico-interno")({
   head: () => ({
@@ -104,13 +106,15 @@ function HistoricoInterno() {
     <main className="min-h-screen bg-black text-white">
       <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <button
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/" })}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
-          </button>
+          </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-orange-500">Estoque interno</p>
             <h1 className="text-xl md:text-2xl font-bold text-white">Minhas Requisições</h1>
@@ -120,24 +124,27 @@ function HistoricoInterno() {
         {loading ? (
           <SkeletonStack rows={5} />
         ) : requisicoes.length === 0 ? (
-          <div className="text-center py-12">
+          <motion.div initial="hidden" animate="visible" variants={fadeIn} className="text-center py-12">
             <Package size={48} className="text-zinc-700 mx-auto mb-3" />
             <p className="text-gray-500">Você ainda não fez nenhuma requisição.</p>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={tap}
               onClick={() => navigate({ to: "/requisicao-interna" })}
               className="mt-4 bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
             >
               Fazer requisição
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         ) : (
-          <ul className="space-y-3">
+          <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-3">
             {requisicoes.map(req => {
               const aberto = expandido === req.id;
               return (
-                <li
+                <motion.li
                   key={req.id}
-                  className="bg-zinc-900 rounded-xl overflow-hidden transition-colors hover:bg-zinc-900/80"
+                  variants={listItem}
+                  className="bg-zinc-900 rounded-xl overflow-hidden transition-colors hover:bg-zinc-900/80 hover:shadow-md hover:shadow-primary/5"
                 >
                   <button
                     onClick={() => toggleExpandir(req.id)}
@@ -170,41 +177,51 @@ function HistoricoInterno() {
                     )}
                   </button>
 
-                  {aberto && (
-                    <div className="border-t border-zinc-800 p-4 bg-zinc-950">
-                      {itens[req.id] ? (
-                        itens[req.id].length === 0 ? (
-                          <p className="text-gray-500 text-sm">Sem itens.</p>
+                  <AnimatePresence initial={false}>
+                    {aberto && (
+                      <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        variants={collapseY}
+                        className="border-t border-zinc-800 p-4 bg-zinc-950"
+                      >
+                        {itens[req.id] ? (
+                          itens[req.id].length === 0 ? (
+                            <p className="text-gray-500 text-sm">Sem itens.</p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {itens[req.id].map(item => (
+                                <li key={item.id} className="flex justify-between text-sm">
+                                  <span className="text-gray-300">{item.produtos?.nome}</span>
+                                  <span className="text-orange-400 font-semibold tabular-nums">
+                                    {item.quantidade} {item.produtos?.unidade}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )
                         ) : (
-                          <ul className="space-y-2">
-                            {itens[req.id].map(item => (
-                              <li key={item.id} className="flex justify-between text-sm">
-                                <span className="text-gray-300">{item.produtos?.nome}</span>
-                                <span className="text-orange-400 font-semibold tabular-nums">
-                                  {item.quantidade} {item.produtos?.unidade}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )
-                      ) : (
-                        <SkeletonStack rows={2} />
-                      )}
-                    </div>
-                  )}
-                </li>
+                          <SkeletonStack rows={2} />
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.li>
               );
             })}
-          </ul>
+          </motion.ul>
         )}
 
         <div className="mt-6">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
             onClick={() => navigate({ to: "/requisicao-interna" })}
             className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
             + Nova Requisição
-          </button>
+          </motion.button>
         </div>
       </div>
     </main>

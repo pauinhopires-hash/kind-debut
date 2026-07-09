@@ -206,8 +206,8 @@ function PedidoPage() {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Carregando...</p>
+      <div className="mx-auto min-h-screen max-w-md space-y-3 bg-background px-6 pt-8 md:max-w-3xl">
+        <SkeletonStack rows={6} />
       </div>
     );
   }
@@ -256,7 +256,7 @@ function PedidoPage() {
             <select
               value={perfilFiltro}
               onChange={(e) => setPerfilFiltro(e.target.value)}
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
             >
               <option value="">Todos os setores</option>
               {perfis.map((pf) => (
@@ -273,7 +273,7 @@ function PedidoPage() {
           placeholder="Buscar produto..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="mb-3 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary"
+          className="mb-3 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
         />
 
         {gruposDisponiveis.length > 1 && (
@@ -372,7 +372,7 @@ function PedidoPage() {
                                         return novo;
                                       });
                                     }}
-                                    className={`rounded border bg-background px-1.5 py-0.5 text-[11px] font-semibold uppercase outline-none focus:border-primary ${
+                                    className={`rounded border bg-background px-1.5 py-0.5 text-[11px] font-semibold uppercase outline-none transition focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
                                       alterada ? "border-primary text-primary" : "border-border text-foreground"
                                     }`}
                                   >
@@ -416,7 +416,7 @@ function PedidoPage() {
                                     setQtd(p.id, Number.isFinite(v) && v > 0 ? arred(v) : 0);
                                   }}
                                   placeholder="0"
-                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none transition-colors focus:border-primary"
+                                  className="h-9 w-16 rounded-md border border-border bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none transition-colors focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
                                 />
                                 <motion.button
                                   whileTap={{ scale: 0.88 }}
@@ -451,7 +451,7 @@ function PedidoPage() {
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               rows={3}
-              className="w-full resize-none rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
+              className="w-full resize-none rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
               placeholder="Marca preferida, urgência, etc."
             />
           </div>

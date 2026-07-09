@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, Check, Copy, CheckCheck, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Check, Copy, CheckCheck, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SkeletonStack } from "@/components/skeleton";
+import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/lista-compras")({
   component: AdminListaCompras,
@@ -263,12 +266,18 @@ function AdminListaCompras() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white p-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl md:max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate({ to: "/admin" })}>
+          <motion.button
+            whileHover={{ x: -2 }}
+            whileTap={tap}
+            onClick={() => navigate({ to: "/admin" })}
+            className="rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+            aria-label="Voltar"
+          >
             <ArrowLeft className="w-5 h-5 text-gray-400" />
-          </button>
+          </motion.button>
           <h1 className="text-xl font-bold flex-1">Lista de compras</h1>
           <span className="text-xs text-gray-400">
             {comprados}/{totalItens} comprados
@@ -281,12 +290,12 @@ function AdminListaCompras() {
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
-            className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
+            className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
           <select
             value={setor}
             onChange={(e) => setSetor(e.target.value)}
-            className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
+            className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
             <option value="todos">Todos os setores</option>
             <option value="COZINHA">COZINHA</option>
@@ -297,32 +306,38 @@ function AdminListaCompras() {
             placeholder="Buscar produto..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="flex-1 min-w-32 px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm focus:outline-none focus:border-orange-500"
+            className="flex-1 min-w-32 px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
         </div>
 
         {/* Ações */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
             onClick={copiarWhatsApp}
-            className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm hover:bg-zinc-700"
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
             <Copy className="w-4 h-4" /> Copiar WhatsApp
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
             onClick={fecharDia}
             disabled={fechando}
-            className="flex items-center gap-2 px-3 py-1.5 rounded bg-orange-600 text-sm hover:bg-orange-500 disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-orange-600 text-sm hover:bg-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:opacity-50"
           >
-            <CheckCheck className="w-4 h-4" />
+            {fechando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
             {fechando ? "Fechando..." : "Marcar tudo e fechar dia"}
-          </button>
+          </motion.button>
         </div>
 
         {carregando ? (
-          <p className="text-gray-400 text-sm">Carregando...</p>
+          <SkeletonStack rows={6} />
         ) : gruposFiltrados.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-12">Nenhuma requisição para este dia/setor.</p>
+          <motion.p initial="hidden" animate="visible" variants={fadeIn} className="text-gray-500 text-sm text-center py-12">
+            Nenhuma requisição para este dia/setor.
+          </motion.p>
         ) : (
           <>
             {/* Cabeçalho da tabela */}
@@ -337,13 +352,14 @@ function AdminListaCompras() {
             {gruposFiltrados.map((g) => (
               <div key={g.nome} className="mb-6">
                 <h2 className="text-xs font-semibold text-orange-400 uppercase tracking-wider mb-2">{g.nome}</h2>
-                <div className="space-y-1">
+                <motion.div initial="hidden" animate="visible" variants={staggerList(0.03, 0.02)} className="space-y-1">
                   {g.itens.map((it) => {
                     const estoqueInsuficiente = it.estoque < it.pedido;
                     return (
-                      <div
+                      <motion.div
                         key={it.produto_id}
-                        className={`grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 items-center px-2 py-1.5 rounded ${
+                        variants={listItem}
+                        className={`grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 items-center px-2 py-1.5 rounded transition-shadow hover:shadow-md hover:shadow-primary/5 ${
                           it.comprado
                             ? "bg-green-950/30 opacity-70"
                             : estoqueInsuficiente
@@ -377,25 +393,30 @@ function AdminListaCompras() {
                           value={it.aComprar}
                           disabled={it.comprado}
                           onChange={(e) => setAComprar(it.produto_id, Number(e.target.value))}
-                          className="w-full text-center text-sm rounded px-1 py-0.5 bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-orange-500 disabled:opacity-40"
+                          className="w-full text-center text-sm rounded px-1 py-0.5 bg-zinc-800 border border-zinc-700 transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-40"
                         />
 
                         {/* Checkbox comprado */}
-                        <button
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => marcarComprado(it)}
                           disabled={salvando === it.produto_id}
-                          className={`flex items-center justify-center w-7 h-7 rounded border transition-colors ${
+                          className={`flex items-center justify-center w-7 h-7 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
                             it.comprado
                               ? "bg-green-600 border-green-600 text-white"
                               : "border-zinc-600 hover:border-orange-500"
                           } disabled:opacity-40`}
                         >
-                          {it.comprado && <Check className="w-4 h-4" />}
-                        </button>
-                      </div>
+                          {salvando === it.produto_id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            it.comprado && <Check className="w-4 h-4" />
+                          )}
+                        </motion.button>
+                      </motion.div>
                     );
                   })}
-                </div>
+                </motion.div>
               </div>
             ))}
           </>
