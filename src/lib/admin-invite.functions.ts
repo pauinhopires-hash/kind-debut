@@ -37,13 +37,18 @@ export const inviteUser = createServerFn({ method: "POST" })
         },
       );
       if (error) {
-        return { success: false as const, error: error.message };
+        console.error("[inviteUser] Supabase error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        const parts = [error.message, error.name, (error as { status?: number }).status, (error as { code?: string }).code]
+          .filter((v) => v !== undefined && v !== null && v !== "");
+        return { success: false as const, error: parts.length > 0 ? parts.join(" | ") : JSON.stringify(error) };
       }
       return { success: true as const, userId: invited.user?.id ?? null };
     } catch (err) {
+      console.error("[inviteUser] Unexpected error:", err instanceof Error ? JSON.stringify(err, Object.getOwnPropertyNames(err)) : err);
+      const message = err instanceof Error && err.message ? err.message : JSON.stringify(err);
       return {
         success: false as const,
-        error: err instanceof Error ? err.message : String(err),
+        error: message || String(err),
       };
     }
   });
