@@ -40,13 +40,17 @@ function AdminUsuarios() {
     if (!inviteEmail || !inviteNome) return;
     setEnviandoConvite(true);
     try {
-      await invite({
+      const result = await invite({
         data: {
           email: inviteEmail.trim(),
           nome: inviteNome.trim(),
           redirectTo: `${window.location.origin}/reset-password`,
         },
       });
+      if (!result.success) {
+        toast.error("Falha ao convidar", { description: result.error });
+        return;
+      }
       toast.success("Convite enviado", { description: `Email enviado para ${inviteEmail}` });
       setInviteEmail("");
       setInviteNome("");
