@@ -27,6 +27,13 @@ export const fadeIn: Variants = {
   visible: { opacity: 1, transition: { duration: 0.25, ease: easeOutExpo } },
 };
 
+// Route-level transition — quicker/subtler than fadeUp, so page swaps stay snappy.
+export const pageTransition: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: easeOutExpo } },
+  exit: { opacity: 0, y: -6, transition: { duration: 0.15, ease: easeInOutSoft } },
+};
+
 export const staggerList = (stagger = 0.05, delay = 0.04): Variants => ({
   hidden: {},
   visible: {

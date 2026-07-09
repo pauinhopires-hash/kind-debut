@@ -4,13 +4,16 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { pageTransition } from "@/lib/motion";
 
 import appCss from "../styles.css?url";
 
@@ -128,6 +131,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     registerServiceWorker();
@@ -142,7 +146,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={pathname}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          variants={pageTransition}
+        >
+          <Outlet />
+        </motion.div>
+      </AnimatePresence>
       <Toaster theme="dark" position="top-center" richColors />
     </QueryClientProvider>
   );

@@ -29,3 +29,18 @@ export function SkeletonStack({ rows = 5 }: { rows?: number }) {
     </div>
   );
 }
+
+export function SkeletonCard({ className = "" }: { className?: string }) {
+  return <Skeleton className={`h-32 w-full rounded-lg ${className}`} />;
+}
+
+export function SkeletonText({ lines = 3 }: { lines?: number }) {
+  const widths = ["w-full", "w-11/12", "w-2/3"];
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton key={i} className={`h-4 ${widths[i % widths.length]}`} />
+      ))}
+    </div>
+  );
+}

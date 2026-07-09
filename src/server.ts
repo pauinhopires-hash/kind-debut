@@ -89,11 +89,15 @@ const clientDir = join(dirname(fileURLToPath(import.meta.url)), "../client");
 // Firebase App Hosting (Cloud Run) runs this file as a plain Node process — unlike
 // Cloudflare Workers, nothing else calls .fetch() for us, so we must bind our own
 // HTTP server on $PORT (same approach Nitro's own node-server preset uses).
-const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
-serve({
-  port,
-  middleware: [serveStatic({ dir: clientDir })],
-  fetch: (request: Request) => fetch(request, undefined, undefined),
-});
+// Guarded to production only — `vite dev` also evaluates this module for its own
+// SSR middleware, and would otherwise open a second, competing HTTP server.
+if (!import.meta.env.DEV) {
+  const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
+  serve({
+    port,
+    middleware: [serveStatic({ dir: clientDir })],
+    fetch: (request: Request) => fetch(request, undefined, undefined),
+  });
+}
 
 export default { fetch };
