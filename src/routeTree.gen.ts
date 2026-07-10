@@ -29,6 +29,7 @@ import { Route as AdminProducaoRouteImport } from './routes/admin.producao'
 import { Route as AdminMovimentacoesRouteImport } from './routes/admin.movimentacoes'
 import { Route as AdminListaComprasRouteImport } from './routes/admin.lista-compras'
 import { Route as AdminIndicadoresRouteImport } from './routes/admin.indicadores'
+import { Route as AdminImportarEstoqueRouteImport } from './routes/admin.importar-estoque'
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
 
@@ -133,6 +134,11 @@ const AdminIndicadoresRoute = AdminIndicadoresRouteImport.update({
   path: '/indicadores',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminImportarEstoqueRoute = AdminImportarEstoqueRouteImport.update({
+  id: '/importar-estoque',
+  path: '/importar-estoque',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEstoqueRoute = AdminEstoqueRouteImport.update({
   id: '/estoque',
   path: '/estoque',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
+  '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
+  '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
+  '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/requisicao-interna'
     | '/reset-password'
     | '/admin/estoque'
+    | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/requisicao-interna'
     | '/reset-password'
     | '/admin/estoque'
+    | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/requisicao-interna'
     | '/reset-password'
     | '/admin/estoque'
+    | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
@@ -445,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndicadoresRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/importar-estoque': {
+      id: '/admin/importar-estoque'
+      path: '/importar-estoque'
+      fullPath: '/admin/importar-estoque'
+      preLoaderRoute: typeof AdminImportarEstoqueRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/estoque': {
       id: '/admin/estoque'
       path: '/estoque'
@@ -464,6 +483,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminEstoqueRoute: typeof AdminEstoqueRoute
+  AdminImportarEstoqueRoute: typeof AdminImportarEstoqueRoute
   AdminIndicadoresRoute: typeof AdminIndicadoresRoute
   AdminListaComprasRoute: typeof AdminListaComprasRoute
   AdminMovimentacoesRoute: typeof AdminMovimentacoesRoute
@@ -478,6 +498,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminEstoqueRoute: AdminEstoqueRoute,
+  AdminImportarEstoqueRoute: AdminImportarEstoqueRoute,
   AdminIndicadoresRoute: AdminIndicadoresRoute,
   AdminListaComprasRoute: AdminListaComprasRoute,
   AdminMovimentacoesRoute: AdminMovimentacoesRoute,

@@ -545,6 +545,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      import_estoque_rows: {
+        Args: {
+          p_rows: Json
+          p_usuario_id: string
+          p_zerar_produto_ids?: string[]
+          p_zerar_local?: string | null
+        }
+        Returns: Json
+      }
       current_user_perfil_id: { Args: never; Returns: string }
       has_role: {
         Args: {

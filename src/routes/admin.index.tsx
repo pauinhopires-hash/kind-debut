@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Factory,
   BookOpen,
+  FileSpreadsheet,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -167,6 +168,14 @@ function AdminDashboard() {
           rota: "/admin/produtos" as const,
           badge: 0,
           cor: "bg-zinc-600",
+        },
+        {
+          label: "Importar Planilha",
+          descricao: "Atualizar estoque em lote",
+          icon: FileSpreadsheet,
+          rota: "/admin/importar-estoque" as const,
+          badge: 0,
+          cor: "bg-zinc-700",
         },
       ],
     },
