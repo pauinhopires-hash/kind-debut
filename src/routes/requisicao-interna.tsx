@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Send, PackageSearch, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Plus, Trash2, Send, PackageSearch, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
-import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
+import { easeOutExpo, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/requisicao-interna")({
   head: () => ({
@@ -17,7 +17,14 @@ export const Route = createFileRoute("/requisicao-interna")({
   component: RequisicaoInterna,
 });
 
-type Produto = { id: string; nome: string; unidade: string; estoque_disponivel: number };
+type Produto = {
+  id: string;
+  nome: string;
+  unidade: string;
+  setor: string | null;
+  local: string | null;
+  estoque_disponivel: number;
+};
 type ItemRequisicao = { produto_id: string; nome: string; unidade: string; quantidade: number };
 
 function RequisicaoInterna() {
@@ -30,6 +37,9 @@ function RequisicaoInterna() {
   const [loading, setLoading] = useState(false);
   const [carregandoProdutos, setCarregandoProdutos] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [busca, setBusca] = useState("");
+  const [setorFiltro, setSetorFiltro] = useState("");
+  const [localFiltro, setLocalFiltro] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -44,19 +54,41 @@ function RequisicaoInterna() {
   const fetchProdutos = async () => {
     setCarregandoProdutos(true);
     const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
-      supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
+      supabase.from("produtos").select("id, nome, unidade, setor, local").eq("ativo", true).order("nome"),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
     ]);
     if (errP) { toast.error("Erro ao carregar produtos"); setCarregandoProdutos(false); return; }
     const estoqueMap: Record<string, number> = {};
     (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = e.quantidade; });
     const lista: Produto[] = (prods || []).map((p: any) => ({
-      id: p.id, nome: p.nome, unidade: p.unidade,
+      id: p.id, nome: p.nome, unidade: p.unidade, setor: p.setor, local: p.local,
       estoque_disponivel: estoqueMap[p.id] ?? 0,
     }));
     setProdutos(lista);
     setCarregandoProdutos(false);
   };
+
+  const produtosFiltrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return produtos.filter((p) => {
+      if (setorFiltro && p.setor !== setorFiltro) return false;
+      if (localFiltro && p.local !== localFiltro) return false;
+      if (q && !p.nome.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [produtos, busca, setorFiltro, localFiltro]);
+
+  const setoresDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => { if (p.setor) set.add(p.setor); });
+    return Array.from(set).sort();
+  }, [produtos]);
+
+  const locaisDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => { if (p.local) set.add(p.local); });
+    return Array.from(set).sort();
+  }, [produtos]);
 
   const adicionarItem = () => {
     if (!produtoSelecionado) { toast.error("Selecione um produto"); return; }
@@ -127,18 +159,76 @@ function RequisicaoInterna() {
             </motion.div>
           ) : (
             <>
-              <select
-                value={produtoSelecionado}
-                onChange={e => setProdutoSelecionado(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white mb-3 focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
-              >
-                <option value="">Selecione um produto...</option>
-                {produtos.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.nome} — {p.estoque_disponivel > 0 ? `disponível: ${p.estoque_disponivel} ${p.unidade}` : p.unidade}
-                  </option>
-                ))}
-              </select>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                <input
+                  type="search"
+                  placeholder="Buscar produto..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg py-2 pl-9 pr-3 text-white transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                />
+              </div>
+
+              {setoresDisponiveis.length > 1 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  <FiltroPill label="Todos os setores" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
+                  {setoresDisponiveis.map((s) => (
+                    <FiltroPill key={s} label={s} ativo={setorFiltro === s} onClick={() => setSetorFiltro(s)} />
+                  ))}
+                </div>
+              )}
+              {locaisDisponiveis.length > 1 && (
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  <FiltroPill label="Todos os locais" ativo={localFiltro === ""} onClick={() => setLocalFiltro("")} />
+                  {locaisDisponiveis.map((l) => (
+                    <FiltroPill key={l} label={l} ativo={localFiltro === l} onClick={() => setLocalFiltro(l)} />
+                  ))}
+                </div>
+              )}
+
+              {produtosFiltrados.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-500">Nada encontrado.</p>
+              ) : (
+                <motion.ul
+                  initial="hidden"
+                  animate="visible"
+                  variants={staggerList(0.02, 0.01)}
+                  className="mb-3 max-h-72 space-y-1.5 overflow-y-auto pr-1"
+                >
+                  {produtosFiltrados.map((p) => {
+                    const selecionado = produtoSelecionado === p.id;
+                    return (
+                      <motion.li key={p.id} variants={listItem}>
+                        <motion.button
+                          type="button"
+                          whileTap={tap}
+                          animate={{
+                            borderColor: selecionado ? "rgba(232,101,10,0.7)" : "rgb(63,63,70)",
+                            backgroundColor: selecionado ? "rgba(232,101,10,0.08)" : "rgb(39,39,42)",
+                          }}
+                          transition={{ duration: 0.2, ease: easeOutExpo }}
+                          onClick={() => setProdutoSelecionado(selecionado ? "" : p.id)}
+                          className="flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-white">{p.nome}</p>
+                            <p className="truncate text-xs text-gray-400">
+                              {[p.setor, p.local].filter(Boolean).join(" · ")}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 text-xs ${p.estoque_disponivel > 0 ? "text-gray-400" : "text-red-400"}`}
+                          >
+                            {p.estoque_disponivel} {p.unidade}
+                          </span>
+                        </motion.button>
+                      </motion.li>
+                    );
+                  })}
+                </motion.ul>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <input
                   type="number"
@@ -221,5 +311,21 @@ function RequisicaoInterna() {
         </motion.button>
       </div>
     </main>
+  );
+}
+
+function FiltroPill({ label, ativo, onClick }: { label: string; ativo: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition ${
+        ativo
+          ? "border-orange-500 bg-orange-500 text-white"
+          : "border-zinc-700 bg-zinc-900 text-gray-400 hover:border-orange-500/60"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
