@@ -11,6 +11,7 @@ import {
   ListChecks,
   ArrowRightLeft,
   FileText,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -169,6 +170,14 @@ function AdminDashboard() {
     {
       group: "Gestão",
       items: [
+        {
+          label: "Indicadores",
+          descricao: "Métricas e KPIs",
+          icon: TrendingUp,
+          rota: "/admin/indicadores" as const,
+          badge: 0,
+          cor: "bg-zinc-600",
+        },
         {
           label: "Usuários",
           descricao: "Gerenciar acessos",
