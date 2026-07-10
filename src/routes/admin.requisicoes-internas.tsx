@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   PackageCheck,
+  Truck,
   AlertTriangle,
   Loader2,
 } from "lucide-react";
@@ -122,6 +123,23 @@ function AdminRequisicoesInternas() {
     }
   };
 
+  const confirmarEntrega = async (req: Requisicao) => {
+    setProcessing(req.id);
+    try {
+      const { error } = await supabase
+        .from("requisicoes_internas")
+        .update({ status: "entregue" })
+        .eq("id", req.id);
+      if (error) throw error;
+      toast.success("Entrega confirmada!");
+      fetchRequisicoes();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   const rejeitar = async (req: Requisicao) => {
     setProcessing(req.id);
     try {
@@ -140,12 +158,14 @@ function AdminRequisicoesInternas() {
   };
 
   const statusColor = (s: string) => {
+    if (s === "entregue") return "text-emerald-400 bg-emerald-400/10";
     if (s === "aprovada") return "text-green-400 bg-green-400/10";
     if (s === "rejeitada") return "text-red-400 bg-red-400/10";
     return "text-orange-400 bg-orange-400/10";
   };
 
   const statusLabel = (s: string) => {
+    if (s === "entregue") return "Entregue";
     if (s === "aprovada") return "Aprovada";
     if (s === "rejeitada") return "Rejeitada";
     return "Pendente";
@@ -239,6 +259,17 @@ function AdminRequisicoesInternas() {
                             {processing === req.id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />} Rejeitar
                           </motion.button>
                         </div>
+                      )}
+                      {req.status === "aprovada" && (
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={tap}
+                          onClick={() => confirmarEntrega(req)}
+                          disabled={processing === req.id}
+                          className="w-full bg-emerald-700 hover:bg-emerald-600 disabled:bg-zinc-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
+                        >
+                          {processing === req.id ? <Loader2 size={16} className="animate-spin" /> : <Truck size={16} />} Confirmar Entrega
+                        </motion.button>
                       )}
                     </motion.div>
                   )}
