@@ -337,7 +337,7 @@ function AdminProdutos() {
                     {SETORES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </Field>
-                <Field label="Local">
+                <Field label="Local padrão (produtos novos)">
                   <select
                     value={form.local}
                     onChange={(e) => setForm((f) => ({ ...f, local: e.target.value }))}
