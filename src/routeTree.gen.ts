@@ -23,7 +23,9 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminRequisicoesInternasRouteImport } from './routes/admin.requisicoes-internas'
 import { Route as AdminRequisicoesRouteImport } from './routes/admin.requisicoes'
+import { Route as AdminReceitasRouteImport } from './routes/admin.receitas'
 import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
+import { Route as AdminProducaoRouteImport } from './routes/admin.producao'
 import { Route as AdminMovimentacoesRouteImport } from './routes/admin.movimentacoes'
 import { Route as AdminListaComprasRouteImport } from './routes/admin.lista-compras'
 import { Route as AdminIndicadoresRouteImport } from './routes/admin.indicadores'
@@ -101,9 +103,19 @@ const AdminRequisicoesRoute = AdminRequisicoesRouteImport.update({
   path: '/requisicoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReceitasRoute = AdminReceitasRouteImport.update({
+  id: '/receitas',
+  path: '/receitas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProdutosRoute = AdminProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProducaoRoute = AdminProducaoRouteImport.update({
+  id: '/producao',
+  path: '/producao',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminMovimentacoesRoute = AdminMovimentacoesRouteImport.update({
@@ -147,7 +159,9 @@ export interface FileRoutesByFullPath {
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
+  '/admin/producao': typeof AdminProducaoRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/receitas': typeof AdminReceitasRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
   '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -168,7 +182,9 @@ export interface FileRoutesByTo {
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
+  '/admin/producao': typeof AdminProducaoRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/receitas': typeof AdminReceitasRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
   '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -191,7 +207,9 @@ export interface FileRoutesById {
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
+  '/admin/producao': typeof AdminProducaoRoute
   '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/receitas': typeof AdminReceitasRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
   '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -215,7 +233,9 @@ export interface FileRouteTypes {
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
+    | '/admin/producao'
     | '/admin/produtos'
+    | '/admin/receitas'
     | '/admin/requisicoes'
     | '/admin/requisicoes-internas'
     | '/admin/usuarios'
@@ -236,7 +256,9 @@ export interface FileRouteTypes {
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
+    | '/admin/producao'
     | '/admin/produtos'
+    | '/admin/receitas'
     | '/admin/requisicoes'
     | '/admin/requisicoes-internas'
     | '/admin/usuarios'
@@ -258,7 +280,9 @@ export interface FileRouteTypes {
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
+    | '/admin/producao'
     | '/admin/produtos'
+    | '/admin/receitas'
     | '/admin/requisicoes'
     | '/admin/requisicoes-internas'
     | '/admin/usuarios'
@@ -379,11 +403,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRequisicoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/receitas': {
+      id: '/admin/receitas'
+      path: '/receitas'
+      fullPath: '/admin/receitas'
+      preLoaderRoute: typeof AdminReceitasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/produtos': {
       id: '/admin/produtos'
       path: '/produtos'
       fullPath: '/admin/produtos'
       preLoaderRoute: typeof AdminProdutosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/producao': {
+      id: '/admin/producao'
+      path: '/producao'
+      fullPath: '/admin/producao'
+      preLoaderRoute: typeof AdminProducaoRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/movimentacoes': {
@@ -429,7 +467,9 @@ interface AdminRouteChildren {
   AdminIndicadoresRoute: typeof AdminIndicadoresRoute
   AdminListaComprasRoute: typeof AdminListaComprasRoute
   AdminMovimentacoesRoute: typeof AdminMovimentacoesRoute
+  AdminProducaoRoute: typeof AdminProducaoRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
+  AdminReceitasRoute: typeof AdminReceitasRoute
   AdminRequisicoesRoute: typeof AdminRequisicoesRoute
   AdminRequisicoesInternasRoute: typeof AdminRequisicoesInternasRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
@@ -441,7 +481,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminIndicadoresRoute: AdminIndicadoresRoute,
   AdminListaComprasRoute: AdminListaComprasRoute,
   AdminMovimentacoesRoute: AdminMovimentacoesRoute,
+  AdminProducaoRoute: AdminProducaoRoute,
   AdminProdutosRoute: AdminProdutosRoute,
+  AdminReceitasRoute: AdminReceitasRoute,
   AdminRequisicoesRoute: AdminRequisicoesRoute,
   AdminRequisicoesInternasRoute: AdminRequisicoesInternasRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,

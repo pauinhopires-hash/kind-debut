@@ -12,6 +12,8 @@ import {
   ArrowRightLeft,
   FileText,
   TrendingUp,
+  Factory,
+  BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -164,6 +166,27 @@ function AdminDashboard() {
           rota: "/admin/produtos" as const,
           badge: 0,
           cor: "bg-zinc-600",
+        },
+      ],
+    },
+    {
+      group: "Produção",
+      items: [
+        {
+          label: "Produção",
+          descricao: "Ordens de produção",
+          icon: Factory,
+          rota: "/admin/producao" as const,
+          badge: 0,
+          cor: "bg-amber-800",
+        },
+        {
+          label: "Fichas técnicas",
+          descricao: "Receitas e insumos",
+          icon: BookOpen,
+          rota: "/admin/receitas" as const,
+          badge: 0,
+          cor: "bg-amber-900",
         },
       ],
     },

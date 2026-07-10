@@ -112,6 +112,57 @@ export type Database = {
           },
         ]
       }
+      ordens_producao: {
+        Row: {
+          concluido_em: string | null
+          criado_em: string
+          id: string
+          observacao: string | null
+          quantidade_planejada: number
+          quantidade_produzida: number | null
+          receita_id: string
+          status: string
+          usuario_id: string | null
+        }
+        Insert: {
+          concluido_em?: string | null
+          criado_em?: string
+          id?: string
+          observacao?: string | null
+          quantidade_planejada: number
+          quantidade_produzida?: number | null
+          receita_id: string
+          status?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          concluido_em?: string | null
+          criado_em?: string
+          id?: string
+          observacao?: string | null
+          quantidade_planejada?: number
+          quantidade_produzida?: number | null
+          receita_id?: string
+          status?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_producao_receita_id_fkey"
+            columns: ["receita_id"]
+            isOneToOne: false
+            referencedRelation: "receitas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_producao_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfis: {
         Row: {
           created_at: string
@@ -179,6 +230,80 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receita_itens: {
+        Row: {
+          id: string
+          insumo_id: string
+          quantidade: number
+          receita_id: string
+          unidade: string | null
+        }
+        Insert: {
+          id?: string
+          insumo_id: string
+          quantidade: number
+          receita_id: string
+          unidade?: string | null
+        }
+        Update: {
+          id?: string
+          insumo_id?: string
+          quantidade?: number
+          receita_id?: string
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receita_itens_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receita_itens_receita_id_fkey"
+            columns: ["receita_id"]
+            isOneToOne: false
+            referencedRelation: "receitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receitas: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          produto_id: string
+          rendimento: number
+          unidade_rendimento: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          produto_id: string
+          rendimento: number
+          unidade_rendimento?: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          produto_id?: string
+          rendimento?: number
+          unidade_rendimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receitas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
