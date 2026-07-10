@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, Check, Copy, CheckCheck, AlertTriangle, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -28,6 +28,14 @@ type ItemLista = {
 
 type Grupo = { nome: string; itens: ItemLista[] };
 
+type RequisicaoPronta = {
+  id: string;
+  numero: number;
+  usuario: string;
+  totalItens: number;
+  compradoItens: number;
+};
+
 function AdminListaCompras() {
   const navigate = useNavigate();
   const [data, setData] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -37,6 +45,8 @@ function AdminListaCompras() {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState<string | null>(null);
   const [fechando, setFechando] = useState(false);
+  const [requisicoesProntas, setRequisicoesProntas] = useState<RequisicaoPronta[]>([]);
+  const [recebendo, setRecebendo] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -52,7 +62,7 @@ function AdminListaCompras() {
           comprado_em,
           produto_id,
           produtos (id, nome, unidade, grupo, setor),
-          requisicoes!inner (id, status, created_at)
+          requisicoes!inner (id, numero, status, created_at, usuarios (nome))
         `,
         )
         .in("requisicoes.status", ["pendente", "aprovada"])
@@ -72,6 +82,37 @@ function AdminListaCompras() {
       (estoqueRows ?? []).forEach((r) => {
         mapEstoque[r.produto_id] = Number(r.quantidade);
       });
+
+      // Agrupa por requisição (independente do filtro de setor) para saber
+      // quais requisições aprovadas já têm todos os itens comprados.
+      const mapRequisicao: Record<string, RequisicaoPronta & { status: string }> = {};
+      for (const item of itens ?? []) {
+        const req = item.requisicoes as unknown as {
+          id: string;
+          numero: number;
+          status: string;
+          usuarios: { nome: string } | null;
+        } | null;
+        if (!req) continue;
+        if (!mapRequisicao[req.id]) {
+          mapRequisicao[req.id] = {
+            id: req.id,
+            numero: req.numero,
+            usuario: req.usuarios?.nome ?? "Usuário desconhecido",
+            status: req.status,
+            totalItens: 0,
+            compradoItens: 0,
+          };
+        }
+        mapRequisicao[req.id].totalItens += 1;
+        if (item.comprado) mapRequisicao[req.id].compradoItens += 1;
+      }
+      setRequisicoesProntas(
+        Object.values(mapRequisicao)
+          .filter((r) => r.status === "aprovada" && r.totalItens > 0 && r.compradoItens === r.totalItens)
+          .map(({ status, ...r }) => r)
+          .sort((a, b) => a.numero - b.numero),
+      );
 
       // Agrupa por produto
       const mapProduto: Record<string, ItemLista> = {};
@@ -210,6 +251,21 @@ function AdminListaCompras() {
     }
   };
 
+  const confirmarRecebimento = async (req: RequisicaoPronta) => {
+    setRecebendo(req.id);
+    try {
+      const { error } = await supabase.from("requisicoes").update({ status: "recebida" }).eq("id", req.id);
+      if (error) throw error;
+      toast.success(`Requisição #${req.numero} marcada como recebida`);
+      await carregar();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao confirmar recebimento", { description: msg });
+    } finally {
+      setRecebendo(null);
+    }
+  };
+
   const fecharDia = async () => {
     setFechando(true);
     try {
@@ -331,6 +387,44 @@ function AdminListaCompras() {
             {fechando ? "Fechando..." : "Marcar tudo e fechar dia"}
           </motion.button>
         </div>
+
+        {!carregando && requisicoesProntas.length > 0 && (
+          <motion.div initial="hidden" animate="visible" variants={staggerList()} className="mb-6 space-y-2">
+            <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">
+              Prontas para receber
+            </h2>
+            {requisicoesProntas.map((r) => (
+              <motion.div
+                key={r.id}
+                variants={listItem}
+                className="flex items-center justify-between gap-3 rounded-lg bg-emerald-950/30 border border-emerald-900/50 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm text-white truncate">
+                    Requisição #{r.numero} — {r.usuario}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {r.compradoItens}/{r.totalItens} itens comprados
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={tap}
+                  onClick={() => confirmarRecebimento(r)}
+                  disabled={recebendo === r.id}
+                  className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 disabled:bg-zinc-700 text-white text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
+                >
+                  {recebendo === r.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <PackageCheck className="w-4 h-4" />
+                  )}
+                  Confirmar Recebimento
+                </motion.button>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         {carregando ? (
           <SkeletonStack rows={6} />
