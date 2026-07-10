@@ -35,16 +35,19 @@ export type Database = {
       estoque_atual: {
         Row: {
           atualizado_em: string
+          local: string
           produto_id: string
           quantidade: number
         }
         Insert: {
           atualizado_em?: string
+          local?: string
           produto_id: string
           quantidade?: number
         }
         Update: {
           atualizado_em?: string
+          local?: string
           produto_id?: string
           quantidade?: number
         }
@@ -64,6 +67,7 @@ export type Database = {
           estoque_antes: number
           estoque_depois: number
           id: string
+          local: string | null
           observacao: string | null
           produto_id: string
           quantidade: number
@@ -76,6 +80,7 @@ export type Database = {
           estoque_antes: number
           estoque_depois: number
           id?: string
+          local?: string | null
           observacao?: string | null
           produto_id: string
           quantidade: number
@@ -88,6 +93,7 @@ export type Database = {
           estoque_antes?: number
           estoque_depois?: number
           id?: string
+          local?: string | null
           observacao?: string | null
           produto_id?: string
           quantidade?: number
