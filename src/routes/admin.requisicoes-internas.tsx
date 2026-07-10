@@ -74,11 +74,12 @@ function AdminRequisicoesInternas() {
     if (req.requisicao_interna_itens.length === 0) { toast.error("Requisição sem itens"); return; }
     setProcessing(req.id);
     try {
-      // 1. Busca estoque atual para cada produto
+      // 1. Busca estoque atual (Estoque Central) para cada produto
       const prodIds = req.requisicao_interna_itens.map(i => i.produto_id);
       const { data: estoques, error: errEst } = await supabase
         .from("estoque_atual")
         .select("produto_id, quantidade")
+        .eq("local", "ESTOQUE CENTRAL")
         .in("produto_id", prodIds);
       if (errEst) throw errEst;
       const estoqueMap: Record<string, number> = {};
@@ -88,6 +89,7 @@ function AdminRequisicoesInternas() {
       const movs = req.requisicao_interna_itens.map(item => ({
         usuario_id: userId,
         produto_id: item.produto_id,
+        local: "ESTOQUE CENTRAL",
         tipo: "saida",
         quantidade: item.quantidade,
         estoque_antes: estoqueMap[item.produto_id] ?? 0,
@@ -103,7 +105,10 @@ function AdminRequisicoesInternas() {
         const depois = Math.max(0, antes - item.quantidade);
         const { error: errUpd } = await supabase
           .from("estoque_atual")
-          .upsert({ produto_id: item.produto_id, quantidade: depois }, { onConflict: "produto_id" });
+          .upsert(
+            { produto_id: item.produto_id, local: "ESTOQUE CENTRAL", quantidade: depois },
+            { onConflict: "produto_id,local" },
+          );
         if (errUpd) throw errUpd;
       }
 

@@ -144,6 +144,7 @@ function AdminProducao() {
       const { data: estoques, error: errEst } = await supabase
         .from("estoque_atual")
         .select("produto_id, quantidade")
+        .eq("local", "ESTOQUE CENTRAL")
         .in("produto_id", [...insumoIds, produtoFinalId]);
       if (errEst) throw errEst;
       const estoqueMap: Record<string, number> = {};
@@ -158,6 +159,7 @@ function AdminProducao() {
         return {
           usuario_id: usuarioId,
           produto_id: item.insumo_id,
+          local: "ESTOQUE CENTRAL",
           tipo: "saida",
           quantidade: consumo,
           estoque_antes: antes,
@@ -170,6 +172,7 @@ function AdminProducao() {
       movs.push({
         usuario_id: usuarioId,
         produto_id: produtoFinalId,
+        local: "ESTOQUE CENTRAL",
         tipo: "entrada",
         quantidade: produzida,
         estoque_antes: antesFinal,
@@ -183,12 +186,18 @@ function AdminProducao() {
       for (const item of receitaItens) {
         const { error } = await supabase
           .from("estoque_atual")
-          .upsert({ produto_id: item.insumo_id, quantidade: estoqueMap[item.insumo_id] }, { onConflict: "produto_id" });
+          .upsert(
+            { produto_id: item.insumo_id, local: "ESTOQUE CENTRAL", quantidade: estoqueMap[item.insumo_id] },
+            { onConflict: "produto_id,local" },
+          );
         if (error) throw error;
       }
       const { error: errFinal } = await supabase
         .from("estoque_atual")
-        .upsert({ produto_id: produtoFinalId, quantidade: depoisFinal }, { onConflict: "produto_id" });
+        .upsert(
+          { produto_id: produtoFinalId, local: "ESTOQUE CENTRAL", quantidade: depoisFinal },
+          { onConflict: "produto_id,local" },
+        );
       if (errFinal) throw errFinal;
 
       const { error: errOrdem } = await supabase

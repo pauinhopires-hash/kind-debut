@@ -58,8 +58,9 @@ function RequisicaoInterna() {
       supabase.from("estoque_atual").select("produto_id, quantidade"),
     ]);
     if (errP) { toast.error("Erro ao carregar produtos"); setCarregandoProdutos(false); return; }
+    // Soma por produto (um produto pode ter estoque em vários locais).
     const estoqueMap: Record<string, number> = {};
-    (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = e.quantidade; });
+    (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = (estoqueMap[e.produto_id] ?? 0) + Number(e.quantidade); });
     const lista: Produto[] = (prods || []).map((p: any) => ({
       id: p.id, nome: p.nome, unidade: p.unidade, setor: p.setor, local: p.local,
       estoque_disponivel: estoqueMap[p.id] ?? 0,

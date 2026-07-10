@@ -78,9 +78,10 @@ function AdminListaCompras() {
         return;
       }
 
+      // Soma por produto (um produto pode ter linhas em vários locais).
       const mapEstoque: Record<string, number> = {};
       (estoqueRows ?? []).forEach((r) => {
-        mapEstoque[r.produto_id] = Number(r.quantidade);
+        mapEstoque[r.produto_id] = (mapEstoque[r.produto_id] ?? 0) + Number(r.quantidade);
       });
 
       // Agrupa por requisição (independente do filtro de setor) para saber
@@ -196,11 +197,12 @@ function AdminListaCompras() {
     const novoComprado = !it.comprado;
 
     try {
-      // Re-lê estoque atual para evitar stale data
+      // Re-lê estoque atual (sempre no Estoque Central) para evitar stale data
       const { data: estRow, error: errEst } = await supabase
         .from("estoque_atual")
         .select("quantidade")
         .eq("produto_id", it.produto_id)
+        .eq("local", "ESTOQUE CENTRAL")
         .maybeSingle();
       if (errEst) throw errEst;
       const estoqueAntes = estRow ? Number(estRow.quantidade) : 0;
@@ -217,10 +219,13 @@ function AdminListaCompras() {
       if (e1) throw e1;
 
       if (it.aComprar > 0) {
-        // 2. Atualiza estoque
+        // 2. Atualiza estoque (sempre no Estoque Central)
         const { error: e2 } = await supabase
           .from("estoque_atual")
-          .upsert({ produto_id: it.produto_id, quantidade: estoqueDepois });
+          .upsert(
+            { produto_id: it.produto_id, local: "ESTOQUE CENTRAL", quantidade: estoqueDepois },
+            { onConflict: "produto_id,local" },
+          );
         if (e2) throw e2;
 
         // 3. Registra movimentação (entrada quando comprou, ajuste quando desmarcou)
@@ -230,6 +235,7 @@ function AdminListaCompras() {
           .insert({
             tipo: novoComprado ? "entrada" : "ajuste",
             produto_id: it.produto_id,
+            local: "ESTOQUE CENTRAL",
             quantidade: it.aComprar,
             estoque_antes: estoqueAntes,
             estoque_depois: estoqueDepois,

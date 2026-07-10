@@ -83,9 +83,10 @@ function AdminIndicadores() {
         setItensCompra((itens ?? []) as unknown as ItemCompra[]);
         setStatusInternas((reqInternas ?? []).map((r) => r.status));
 
+        // Soma por produto (um produto pode ter estoque em vários locais).
         const mapEstoque: Record<string, number> = {};
         (estoqueRes ?? []).forEach((r) => {
-          mapEstoque[r.produto_id] = Number(r.quantidade);
+          mapEstoque[r.produto_id] = (mapEstoque[r.produto_id] ?? 0) + Number(r.quantidade);
         });
         const baixos = (produtosRes ?? [])
           .map((p) => ({ nome: p.nome, atual: mapEstoque[p.id] ?? 0, minimo: Number(p.estoque_minimo) }))

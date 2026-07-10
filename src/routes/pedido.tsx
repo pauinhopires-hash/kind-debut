@@ -63,9 +63,10 @@ function PedidoPage() {
       if (e1) toast.error("Erro ao carregar produtos", { description: e1.message });
       setProdutos((prods ?? []) as Produto[]);
       setPerfis((pfs ?? []) as Perfil[]);
+      // Soma por produto (um produto pode ter estoque em vários locais).
       const map: Record<string, number> = {};
       (est ?? []).forEach((r: { produto_id: string; quantidade: number }) => {
-        map[r.produto_id] = Number(r.quantidade);
+        map[r.produto_id] = (map[r.produto_id] ?? 0) + Number(r.quantidade);
       });
       setEstoque(map);
       setCarregando(false);

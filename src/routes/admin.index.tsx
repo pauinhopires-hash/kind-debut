@@ -73,9 +73,10 @@ function AdminDashboard() {
     if (produtosRes.error) console.error("produtos", produtosRes.error);
     if (estoqueRes.error) console.error("estoque", estoqueRes.error);
 
+    // Soma por produto (um produto pode ter estoque em vários locais).
     const mapEstoque: Record<string, number> = {};
     (estoqueRes.data ?? []).forEach((r) => {
-      mapEstoque[r.produto_id] = Number(r.quantidade);
+      mapEstoque[r.produto_id] = (mapEstoque[r.produto_id] ?? 0) + Number(r.quantidade);
     });
     const baixo = (produtosRes.data ?? []).filter(
       (p) => (mapEstoque[p.id] ?? 0) < Number(p.estoque_minimo),

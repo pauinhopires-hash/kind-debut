@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, AlertTriangle, Package, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, Package, Loader2, Plus, LayoutList, Combine } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
@@ -24,12 +24,29 @@ type ProdutoEstoque = {
   locais: LocalEstoque[];
 };
 
+const TODOS_LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"];
+
 function AdminEstoque() {
   const navigate = useNavigate();
   const [produtos, setProdutos] = useState<ProdutoEstoque[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [novoLocal, setNovoLocal] = useState<Record<string, string>>({});
+  const [adicionando, setAdicionando] = useState<string | null>(null);
+  const [verSomado, setVerSomado] = useState(false);
+
+  useEffect(() => {
+    setVerSomado(localStorage.getItem("estoque_ver_somado") === "1");
+  }, []);
+
+  const alternarVisao = () => {
+    setVerSomado((v) => {
+      const novo = !v;
+      localStorage.setItem("estoque_ver_somado", novo ? "1" : "0");
+      return novo;
+    });
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -109,6 +126,26 @@ function AdminEstoque() {
     }
   };
 
+  const adicionarLocal = async (produto: ProdutoEstoque) => {
+    const local = novoLocal[produto.id];
+    if (!local) return;
+    setAdicionando(produto.id);
+    try {
+      const { error } = await supabase.from("estoque_atual").upsert(
+        { produto_id: produto.id, local, quantidade: 0 },
+        { onConflict: "produto_id,local" },
+      );
+      if (error) throw error;
+      toast.success(`Local ${local} adicionado a ${produto.nome}`);
+      setNovoLocal((n) => ({ ...n, [produto.id]: "" }));
+      fetchEstoque();
+    } catch (e: any) {
+      toast.error("Erro: " + e.message);
+    } finally {
+      setAdicionando(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="max-w-2xl md:max-w-3xl mx-auto p-4 md:p-8">
@@ -122,7 +159,16 @@ function AdminEstoque() {
           >
             <ArrowLeft size={22} />
           </motion.button>
-          <h1 className="text-xl font-bold text-orange-500">Gestão de Estoque</h1>
+          <h1 className="text-xl font-bold text-orange-500 flex-1">Gestão de Estoque</h1>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
+            onClick={alternarVisao}
+            className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-gray-300 hover:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+          >
+            {verSomado ? <LayoutList size={14} /> : <Combine size={14} />}
+            {verSomado ? "Por local" : "Somar locais"}
+          </motion.button>
         </div>
         {loading ? (
           <SkeletonStack rows={6} />
@@ -143,9 +189,14 @@ function AdminEstoque() {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     {totalProduto <= 0 && <AlertTriangle size={14} className="text-orange-400 flex-shrink-0" />}
-                    <p className="text-white font-medium truncate">{p.nome}</p>
+                    <p className="text-white font-medium truncate flex-1">{p.nome}</p>
+                    {verSomado && (
+                      <p className={`text-sm font-semibold ${totalProduto <= 0 ? "text-orange-400" : "text-gray-300"}`}>
+                        {totalProduto} {p.unidade}
+                      </p>
+                    )}
                   </div>
-                  {p.locais.length === 0 ? (
+                  {verSomado ? null : p.locais.length === 0 ? (
                     <p className="text-sm text-gray-500">Sem estoque cadastrado ainda.</p>
                   ) : (
                     <div className="space-y-2 mt-2">
@@ -185,6 +236,37 @@ function AdminEstoque() {
                       })}
                     </div>
                   )}
+                  {(() => {
+                    if (verSomado) return null;
+                    const locaisDisponiveis = TODOS_LOCAIS.filter(
+                      (l) => !p.locais.some((pl) => pl.local === l),
+                    );
+                    if (locaisDisponiveis.length === 0) return null;
+                    return (
+                      <div className="flex items-center gap-2 mt-2">
+                        <select
+                          value={novoLocal[p.id] ?? ""}
+                          onChange={(e) => setNovoLocal((n) => ({ ...n, [p.id]: e.target.value }))}
+                          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                        >
+                          <option value="">+ Adicionar local...</option>
+                          {locaisDisponiveis.map((l) => (
+                            <option key={l} value={l}>{l}</option>
+                          ))}
+                        </select>
+                        <motion.button
+                          whileHover={novoLocal[p.id] ? { scale: 1.05 } : undefined}
+                          whileTap={tap}
+                          onClick={() => adicionarLocal(p)}
+                          disabled={!novoLocal[p.id] || adicionando === p.id}
+                          className="bg-zinc-800 border border-zinc-700 hover:border-orange-500 disabled:opacity-40 text-white rounded-lg p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                          aria-label="Adicionar local"
+                        >
+                          {adicionando === p.id ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                        </motion.button>
+                      </div>
+                    );
+                  })()}
                 </motion.div>
               );
             })}
