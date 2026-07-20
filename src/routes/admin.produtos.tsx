@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, Check, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, Check, Search, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,6 +33,7 @@ const SETORES = ["COZINHA", "ESTOQUE CENTRAL", "FRENTE"];
 const LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"];
 
 function AdminProdutos() {
+  const navigate = useNavigate();
   const { voltar, avancar } = useVoltarAvancar("/admin");
   const { usuario } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -182,6 +183,14 @@ function AdminProdutos() {
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>
             <h1 className="text-lg font-bold text-foreground">Produtos ({produtos.length})</h1>
           </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
+            onClick={() => navigate({ to: "/admin/importar-estoque" })}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-bold uppercase text-foreground transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+          >
+            <FileSpreadsheet size={14} /> Importar em massa
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={tap}
