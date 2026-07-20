@@ -1,12 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/lista-compras")({
@@ -37,7 +38,7 @@ type RequisicaoPronta = {
 };
 
 function AdminListaCompras() {
-  const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [data, setData] = useState(format(new Date(), "yyyy-MM-dd"));
   const [setor, setSetor] = useState("todos");
   const [busca, setBusca] = useState("");
@@ -334,11 +335,20 @@ function AdminListaCompras() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft className="w-5 h-5 text-gray-400" />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+            aria-label="Avançar"
+          >
+            <ArrowRight className="w-5 h-5 text-gray-400" />
           </motion.button>
           <h1 className="text-xl font-bold flex-1">Lista de compras</h1>
           <span className="text-xs text-gray-400">

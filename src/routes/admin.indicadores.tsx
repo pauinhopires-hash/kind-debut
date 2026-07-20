@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/indicadores")({
@@ -44,7 +45,7 @@ function formatBRL(v: number) {
 }
 
 function AdminIndicadores() {
-  const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [periodo, setPeriodo] = useState<Periodo>(30);
   const [carregando, setCarregando] = useState(true);
   const [itensCompra, setItensCompra] = useState<ItemCompra[]>([]);
@@ -134,11 +135,20 @@ function AdminIndicadores() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </motion.button>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>

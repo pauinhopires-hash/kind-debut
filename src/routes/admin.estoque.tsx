@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Save, AlertTriangle, Package, Loader2, Plus, LayoutList, Combine } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, AlertTriangle, Package, Loader2, Plus, LayoutList, Combine } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { SkeletonStack } from "@/components/skeleton";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
@@ -28,6 +29,7 @@ const TODOS_LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"
 
 function AdminEstoque() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [produtos, setProdutos] = useState<ProdutoEstoque[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -153,11 +155,20 @@ function AdminEstoque() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={22} />
           </motion.button>
           <h1 className="text-xl font-bold text-orange-500 flex-1">Gestão de Estoque</h1>
           <motion.button

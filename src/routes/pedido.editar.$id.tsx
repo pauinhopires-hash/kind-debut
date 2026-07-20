@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Minus, Plus, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/pedido/editar/$id")({
@@ -18,6 +19,7 @@ type Produto = { id: string; nome: string; unidade: string };
 function EditarPedido() {
   const { id } = useParams({ from: "/pedido/editar/$id" });
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/historico");
   const { user, loading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [quantidades, setQuantidades] = useState<Record<string, number>>({});
@@ -164,11 +166,20 @@ function EditarPedido() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/historico" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-primary">Edição</p>

@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus, Check, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Minus, Plus, Check, RotateCcw } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { easeOutExpo, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/pedido")({
@@ -30,14 +32,21 @@ type Perfil = { id: string; nome: string };
 
 function PedidoPage() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/");
   const { user, usuario, isAdmin, loading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [estoque, setEstoque] = useState<Record<string, number>>({});
   const [carregando, setCarregando] = useState(true);
-  const [quantidades, setQuantidades] = useState<Record<string, number>>({});
-  const [unidadesOverride, setUnidadesOverride] = useState<Record<string, string>>({});
-  const [observacao, setObservacao] = useState("");
+  const [quantidades, setQuantidades, limparQuantidades] = usePersistedState<Record<string, number>>(
+    "pedido_quantidades",
+    {},
+  );
+  const [unidadesOverride, setUnidadesOverride, limparUnidades] = usePersistedState<Record<string, string>>(
+    "pedido_unidades_override",
+    {},
+  );
+  const [observacao, setObservacao, limparObservacao] = usePersistedState("pedido_observacao", "");
   const [salvando, setSalvando] = useState(false);
   const [busca, setBusca] = useState("");
   const [perfilFiltro, setPerfilFiltro] = useState<string>("");
@@ -202,6 +211,9 @@ function PedidoPage() {
       return;
     }
     toast.success("Pedido enviado", { description: `${itens.length} itens registrados.` });
+    limparQuantidades();
+    limparUnidades();
+    limparObservacao();
     navigate({ to: "/" });
   };
 
@@ -220,11 +232,20 @@ function PedidoPage() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </motion.button>
           <motion.div
             initial={{ opacity: 0, y: 4 }}

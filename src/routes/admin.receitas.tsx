@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/receitas")({
@@ -26,7 +27,7 @@ type Receita = {
 type ItemForm = { insumo_id: string; quantidade: string; unidade: string };
 
 function AdminReceitas() {
-  const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [receitas, setReceitas] = useState<Receita[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -178,11 +179,20 @@ function AdminReceitas() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </motion.button>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>

@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronDown, Clock, Pencil, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Clock, Pencil, XCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { collapseY, easeOutExpo, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/historico")({
@@ -45,6 +46,7 @@ function formatarDataHora(iso: string) {
 
 function HistoricoPage() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/");
   const { user, loading } = useAuth();
   const [reqs, setReqs] = useState<Requisicao[]>([]);
   const [itens, setItens] = useState<Record<string, Item[]>>({});
@@ -124,11 +126,20 @@ function HistoricoPage() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </motion.button>
           <motion.div
             initial={{ opacity: 0, y: 4 }}

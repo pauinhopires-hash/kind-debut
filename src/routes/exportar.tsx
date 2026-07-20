@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Copy, Check, Share2, Download } from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, Check, Share2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 
 export const Route = createFileRoute("/exportar")({
   head: () => ({
@@ -31,6 +32,7 @@ function formatarDataHora(iso: string) {
 
 function ExportarPage() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/");
   const { user, usuario, perfil, loading } = useAuth();
   const [texto, setTexto] = useState("");
   const [vazio, setVazio] = useState(false);
@@ -148,11 +150,18 @@ function ExportarPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center gap-3">
           <button
-            onClick={() => navigate({ to: "/" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </button>
+          <button
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition hover:bg-card hover:text-foreground"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </button>
           <div>
             <p className="text-xs uppercase tracking-widest text-primary">Compartilhar</p>

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   XCircle,
   ChevronDown,
@@ -15,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/requisicoes-internas")({
@@ -40,6 +42,7 @@ type Requisicao = {
 
 function AdminRequisicoesInternas() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [requisicoes, setRequisicoes] = useState<Requisicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -183,11 +186,20 @@ function AdminRequisicoesInternas() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={22} />
           </motion.button>
           <h1 className="text-xl font-bold text-orange-500">Requisições Internas</h1>
         </div>

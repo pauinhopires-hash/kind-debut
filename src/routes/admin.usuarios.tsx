@@ -1,12 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Shield, ShieldOff, UserPlus, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Shield, ShieldOff, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { inviteUser } from "@/lib/admin-invite.functions";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -24,7 +25,7 @@ type Perfil = { id: string; nome: string };
 type RoleRow = { user_id: string; role: string };
 
 function AdminUsuarios() {
-  const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
@@ -140,11 +141,20 @@ function AdminUsuarios() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={18} />
           </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>

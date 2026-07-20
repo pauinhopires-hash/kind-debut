@@ -1,9 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Upload, Download, Loader2, AlertTriangle, Check, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Download, Loader2, AlertTriangle, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/importar-estoque")({
@@ -68,13 +70,19 @@ function distanciaLevenshtein(a: string, b: string) {
 }
 
 function AdminImportarEstoque() {
-  const navigate = useNavigate();
-  const [modo, setModo] = useState<"parcial" | "completa">("parcial");
-  const [localReconciliacao, setLocalReconciliacao] = useState("ESTOQUE CENTRAL");
+  const { voltar, avancar } = useVoltarAvancar("/admin");
+  const [modo, setModo] = usePersistedState<"parcial" | "completa">("importar_estoque_modo", "parcial");
+  const [localReconciliacao, setLocalReconciliacao] = usePersistedState(
+    "importar_estoque_local",
+    "ESTOQUE CENTRAL",
+  );
   const [carregandoArquivo, setCarregandoArquivo] = useState(false);
-  const [nomeArquivo, setNomeArquivo] = useState<string | null>(null);
-  const [linhas, setLinhas] = useState<LinhaPreview[]>([]);
-  const [ausentes, setAusentes] = useState<Ausente[]>([]);
+  const [nomeArquivo, setNomeArquivo, limparNomeArquivo] = usePersistedState<string | null>(
+    "importar_estoque_nome_arquivo",
+    null,
+  );
+  const [linhas, setLinhas, limparLinhas] = usePersistedState<LinhaPreview[]>("importar_estoque_linhas", []);
+  const [ausentes, setAusentes, limparAusentes] = usePersistedState<Ausente[]>("importar_estoque_ausentes", []);
   const [aplicando, setAplicando] = useState(false);
   const [exportando, setExportando] = useState(false);
   const [resultado, setResultado] = useState<{ criados: number; atualizados: number; zerados: number } | null>(null);
@@ -309,9 +317,9 @@ function AdminImportarEstoque() {
 
       setResultado(data as { criados: number; atualizados: number; zerados: number });
       toast.success("Importação concluída");
-      setLinhas([]);
-      setAusentes([]);
-      setNomeArquivo(null);
+      limparLinhas();
+      limparAusentes();
+      limparNomeArquivo();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Erro ao importar", { description: msg });
@@ -327,11 +335,20 @@ function AdminImportarEstoque() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={22} />
           </motion.button>
           <h1 className="text-xl font-bold text-orange-500 flex-1">Estoque em planilha</h1>
         </div>

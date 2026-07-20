@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, X, Check, XCircle, Loader2, ChevronDown, ChevronUp, Factory } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, X, Check, XCircle, Loader2, ChevronDown, ChevronUp, Factory } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/producao")({
@@ -30,7 +31,7 @@ type Ordem = {
 };
 
 function AdminProducao() {
-  const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/admin");
   const [receitas, setReceitas] = useState<Receita[]>([]);
   const [ordens, setOrdens] = useState<Ordem[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -238,11 +239,20 @@ function AdminProducao() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin" })}
+            onClick={voltar}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={22} />
           </motion.button>
           <h1 className="text-xl font-bold text-orange-500 flex-1">Produção</h1>
           <motion.button

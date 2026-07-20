@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Send, PackageSearch, Loader2, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Send, PackageSearch, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { easeOutExpo, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/requisicao-interna")({
@@ -29,11 +31,12 @@ type ItemRequisicao = { produto_id: string; nome: string; unidade: string; quant
 
 function RequisicaoInterna() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/");
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [itens, setItens] = useState<ItemRequisicao[]>([]);
+  const [itens, setItens, limparItens] = usePersistedState<ItemRequisicao[]>("requisicao_interna_itens", []);
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
   const [quantidade, setQuantidade] = useState(1);
-  const [observacao, setObservacao] = useState("");
+  const [observacao, setObservacao, limparObservacao] = usePersistedState("requisicao_interna_observacao", "");
   const [loading, setLoading] = useState(false);
   const [carregandoProdutos, setCarregandoProdutos] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -121,6 +124,8 @@ function RequisicaoInterna() {
         .insert(itens.map(i => ({ requisicao_id: req.id, produto_id: i.produto_id, quantidade: i.quantidade })));
       if (errItens) throw errItens;
       toast.success("Requisição enviada!");
+      limparItens();
+      limparObservacao();
       navigate({ to: "/historico-interno" });
     } catch (e: any) {
       toast.error("Erro: " + e.message);
@@ -136,11 +141,20 @@ function RequisicaoInterna() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/" })}
+            onClick={voltar}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={22} />
           </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-orange-500">Estoque interno</p>

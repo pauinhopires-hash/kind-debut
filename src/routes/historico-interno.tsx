@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Package } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/historico-interno")({
@@ -32,6 +33,7 @@ type Item = {
 
 function HistoricoInterno() {
   const navigate = useNavigate();
+  const { voltar, avancar } = useVoltarAvancar("/");
   const [requisicoes, setRequisicoes] = useState<RequisicaoInterna[]>([]);
   const [itens, setItens] = useState<Record<string, Item[]>>({});
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -109,11 +111,20 @@ function HistoricoInterno() {
           <motion.button
             whileHover={{ x: -2 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/" })}
+            onClick={voltar}
             className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             aria-label="Voltar"
           >
             <ArrowLeft size={22} />
+          </motion.button>
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={tap}
+            onClick={avancar}
+            className="text-gray-400 hover:text-white rounded-md p-2 hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            aria-label="Avançar"
+          >
+            <ArrowRight size={22} />
           </motion.button>
           <div>
             <p className="text-xs uppercase tracking-widest text-orange-500">Estoque interno</p>
