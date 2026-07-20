@@ -76,6 +76,7 @@ function AdminImportarEstoque() {
   const [linhas, setLinhas] = useState<LinhaPreview[]>([]);
   const [ausentes, setAusentes] = useState<Ausente[]>([]);
   const [aplicando, setAplicando] = useState(false);
+  const [exportando, setExportando] = useState(false);
   const [resultado, setResultado] = useState<{ criados: number; atualizados: number; zerados: number } | null>(null);
 
   const processarArquivo = async (file: File) => {
@@ -207,6 +208,63 @@ function AdminImportarEstoque() {
     XLSX.writeFile(wb, "modelo-importacao-estoque.xlsx");
   };
 
+  const exportarAtual = async () => {
+    setExportando(true);
+    try {
+      const [{ data: produtos, error: errProd }, { data: estoques, error: errEst }] = await Promise.all([
+        supabase
+          .from("produtos")
+          .select("id, nome, unidade, setor, local, grupo, subgrupo, valor_unitario, estoque_minimo")
+          .eq("ativo", true)
+          .order("nome"),
+        supabase.from("estoque_atual").select("produto_id, local, quantidade"),
+      ]);
+      if (errProd) throw errProd;
+      if (errEst) throw errEst;
+
+      const estoquesPorProduto = new Map<string, { local: string; quantidade: number }[]>();
+      (estoques ?? []).forEach((e) => {
+        const lista = estoquesPorProduto.get(e.produto_id) ?? [];
+        lista.push({ local: e.local, quantidade: Number(e.quantidade) });
+        estoquesPorProduto.set(e.produto_id, lista);
+      });
+
+      const linhasExport: Record<string, string | number>[] = [];
+      (produtos ?? []).forEach((p) => {
+        const locais = estoquesPorProduto.get(p.id);
+        const base = {
+          nome: p.nome,
+          unidade: p.unidade,
+          setor: p.setor ?? "",
+          grupo: p.grupo ?? "",
+          subgrupo: p.subgrupo ?? "",
+          valor_unitario: p.valor_unitario ?? "",
+          estoque_minimo: p.estoque_minimo ?? "",
+        };
+        if (!locais || locais.length === 0) {
+          linhasExport.push({ ...base, local: p.local ?? "ESTOQUE CENTRAL", quantidade: 0 });
+        } else {
+          locais
+            .sort((a, b) => a.local.localeCompare(b.local))
+            .forEach((l) => linhasExport.push({ ...base, local: l.local, quantidade: l.quantidade }));
+        }
+      });
+
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.json_to_sheet(linhasExport, { header: COLUNAS_MODELO });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Estoque");
+      const dataFmt = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `estoque-${dataFmt}.xlsx`);
+      toast.success(`${linhasExport.length} linha(s) exportada(s)`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao exportar", { description: msg });
+    } finally {
+      setExportando(false);
+    }
+  };
+
   const totalIncluidas = useMemo(() => linhas.filter((l) => l.incluir).length, [linhas]);
   const totalAusentesMarcados = useMemo(() => ausentes.filter((a) => a.incluir).length, [ausentes]);
 
@@ -275,7 +333,9 @@ function AdminImportarEstoque() {
           >
             <ArrowLeft size={22} />
           </motion.button>
-          <h1 className="text-xl font-bold text-orange-500 flex-1">Importar planilha de estoque</h1>
+          <h1 className="text-xl font-bold text-orange-500 flex-1">Estoque em planilha</h1>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-4">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={tap}
@@ -283,6 +343,16 @@ function AdminImportarEstoque() {
             className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-gray-300 hover:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
           >
             <Download size={14} /> Baixar modelo
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={tap}
+            onClick={exportarAtual}
+            disabled={exportando}
+            className="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-semibold text-gray-300 hover:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:opacity-50"
+          >
+            {exportando ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            {exportando ? "Exportando..." : "Exportar estoque atual"}
           </motion.button>
         </div>
 

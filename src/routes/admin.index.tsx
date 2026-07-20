@@ -170,8 +170,8 @@ function AdminDashboard() {
           cor: "bg-zinc-600",
         },
         {
-          label: "Importar Planilha",
-          descricao: "Atualizar estoque em lote",
+          label: "Estoque em Planilha",
+          descricao: "Importar / exportar em lote",
           icon: FileSpreadsheet,
           rota: "/admin/importar-estoque" as const,
           badge: 0,
