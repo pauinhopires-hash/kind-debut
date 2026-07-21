@@ -201,7 +201,7 @@ function AdminImportarEstoque() {
       {
         nome: "Farinha de Trigo",
         unidade: "KG",
-        setor: "COZINHA",
+        setor: "COZINHA, FRENTE",
         local: "ESTOQUE CENTRAL",
         grupo: "Secos",
         subgrupo: "Farinhas",
@@ -219,16 +219,18 @@ function AdminImportarEstoque() {
   const exportarAtual = async () => {
     setExportando(true);
     try {
-      const [{ data: produtos, error: errProd }, { data: estoques, error: errEst }] = await Promise.all([
+      const [{ data: produtos, error: errProd }, { data: estoques, error: errEst }, { data: funcaoRows, error: errFuncoes }] = await Promise.all([
         supabase
           .from("produtos")
-          .select("id, nome, unidade, setor, local, grupo, subgrupo, valor_unitario, estoque_minimo")
+          .select("id, nome, unidade, local, grupo, subgrupo, valor_unitario, estoque_minimo")
           .eq("ativo", true)
           .order("nome"),
         supabase.from("estoque_atual").select("produto_id, local, quantidade"),
+        supabase.from("produto_funcoes").select("produto_id, funcoes(nome)"),
       ]);
       if (errProd) throw errProd;
       if (errEst) throw errEst;
+      if (errFuncoes) throw errFuncoes;
 
       const estoquesPorProduto = new Map<string, { local: string; quantidade: number }[]>();
       (estoques ?? []).forEach((e) => {
@@ -237,13 +239,21 @@ function AdminImportarEstoque() {
         estoquesPorProduto.set(e.produto_id, lista);
       });
 
+      const funcoesPorProduto = new Map<string, string[]>();
+      (funcaoRows ?? []).forEach((r: any) => {
+        if (!r.funcoes?.nome) return;
+        const lista = funcoesPorProduto.get(r.produto_id) ?? [];
+        lista.push(r.funcoes.nome);
+        funcoesPorProduto.set(r.produto_id, lista);
+      });
+
       const linhasExport: Record<string, string | number>[] = [];
       (produtos ?? []).forEach((p) => {
         const locais = estoquesPorProduto.get(p.id);
         const base = {
           nome: p.nome,
           unidade: p.unidade,
-          setor: p.setor ?? "",
+          setor: (funcoesPorProduto.get(p.id) ?? []).join(", "),
           grupo: p.grupo ?? "",
           subgrupo: p.subgrupo ?? "",
           valor_unitario: p.valor_unitario ?? "",

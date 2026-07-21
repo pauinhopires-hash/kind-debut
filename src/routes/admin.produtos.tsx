@@ -21,15 +21,15 @@ type Produto = {
   perfil_id: string | null;
   grupo: string | null;
   subgrupo: string | null;
-  setor: string | null;
   local: string | null;
   valor_unitario: number | null;
+  funcoes: string[];
 };
 
 type Perfil = { id: string; nome: string };
+type Funcao = { id: string; nome: string };
 
 const UNIDADES = ["UND", "KG", "CX", "PC", "PCT", "LT"];
-const SETORES = ["COZINHA", "ESTOQUE CENTRAL", "FRENTE"];
 const LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"];
 
 function AdminProdutos() {
@@ -38,6 +38,7 @@ function AdminProdutos() {
   const { usuario } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
+  const [funcoes, setFuncoes] = useState<Funcao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
   const [novo, setNovo] = useState(false);
@@ -49,23 +50,35 @@ function AdminProdutos() {
     perfil_id: "",
     grupo: "",
     subgrupo: "",
-    setor: "",
     local: "",
     valor_unitario: "" as string,
     ativo: true,
   });
+  const [funcoesVinculadas, setFuncoesVinculadas] = useState<string[]>([]);
+  const [funcaoParaAdicionar, setFuncaoParaAdicionar] = useState("");
 
   const carregar = async () => {
     setCarregando(true);
-    const [{ data: prods }, { data: pfs }] = await Promise.all([
+    const [{ data: prods }, { data: pfs }, { data: fcs }, { data: vinculos }] = await Promise.all([
       supabase
         .from("produtos")
-        .select("id, nome, unidade, ativo, perfil_id, grupo, subgrupo, setor, local, valor_unitario")
+        .select("id, nome, unidade, ativo, perfil_id, grupo, subgrupo, local, valor_unitario")
         .order("nome"),
       supabase.from("perfis").select("id, nome").order("nome"),
+      supabase.from("funcoes").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("produto_funcoes").select("produto_id, funcoes(nome)"),
     ]);
-    setProdutos((prods ?? []) as Produto[]);
+    const mapaFuncoes: Record<string, string[]> = {};
+    ((vinculos ?? []) as any[]).forEach((v) => {
+      if (!v.funcoes?.nome) return;
+      if (!mapaFuncoes[v.produto_id]) mapaFuncoes[v.produto_id] = [];
+      mapaFuncoes[v.produto_id].push(v.funcoes.nome);
+    });
+    setProdutos(
+      ((prods ?? []) as any[]).map((p) => ({ ...p, funcoes: mapaFuncoes[p.id] ?? [] })),
+    );
     setPerfis((pfs ?? []) as Perfil[]);
+    setFuncoes((fcs ?? []) as Funcao[]);
     setCarregando(false);
   };
 
@@ -89,30 +102,42 @@ function AdminProdutos() {
       perfil_id: usuario?.perfil_id ?? "",
       grupo: "",
       subgrupo: "",
-      setor: "",
       local: "",
       valor_unitario: "",
       ativo: true,
     });
+    setFuncoesVinculadas([]);
+    setFuncaoParaAdicionar("");
     setEditando(null);
     setNovo(true);
   };
 
-  const abrirEditar = (p: Produto) => {
+  const abrirEditar = async (p: Produto) => {
     setForm({
       nome: p.nome,
       unidade: p.unidade,
       perfil_id: p.perfil_id ?? "",
       grupo: p.grupo ?? "",
       subgrupo: p.subgrupo ?? "",
-      setor: p.setor ?? "",
       local: p.local ?? "",
       valor_unitario: p.valor_unitario != null ? String(p.valor_unitario) : "",
       ativo: p.ativo,
     });
+    const { data } = await supabase.from("produto_funcoes").select("funcao_id").eq("produto_id", p.id);
+    setFuncoesVinculadas((data ?? []).map((v) => v.funcao_id));
+    setFuncaoParaAdicionar("");
     setEditando(p);
     setNovo(false);
   };
+
+  const adicionarFuncao = () => {
+    if (!funcaoParaAdicionar || funcoesVinculadas.includes(funcaoParaAdicionar)) return;
+    setFuncoesVinculadas((v) => [...v, funcaoParaAdicionar]);
+    setFuncaoParaAdicionar("");
+  };
+  const removerFuncao = (funcaoId: string) =>
+    setFuncoesVinculadas((v) => v.filter((id) => id !== funcaoId));
+  const nomeFuncao = (id: string) => funcoes.find((f) => f.id === id)?.nome ?? id;
 
   const fechar = () => {
     setEditando(null);
@@ -131,22 +156,41 @@ function AdminProdutos() {
       perfil_id: form.perfil_id || null,
       grupo: form.grupo.trim() || null,
       subgrupo: form.subgrupo.trim() || null,
-      setor: form.setor || null,
       local: form.local || null,
       valor_unitario: valor,
       ativo: form.ativo,
     };
-    if (editando) {
-      const { error } = await supabase.from("produtos").update(payload).eq("id", editando.id);
-      if (error) return toast.error("Erro ao salvar", { description: error.message });
-      toast.success("Produto atualizado");
-    } else {
-      const { error } = await supabase.from("produtos").insert(payload);
-      if (error) return toast.error("Erro ao criar", { description: error.message });
-      toast.success("Produto criado");
+    try {
+      let produtoId = editando?.id;
+      if (editando) {
+        const { error } = await supabase.from("produtos").update(payload).eq("id", editando.id);
+        if (error) throw error;
+        const { error: errDel } = await supabase
+          .from("produto_funcoes")
+          .delete()
+          .eq("produto_id", editando.id);
+        if (errDel) throw errDel;
+      } else {
+        const { data, error } = await supabase.from("produtos").insert(payload).select("id").single();
+        if (error) throw error;
+        produtoId = data.id;
+      }
+      if (!produtoId) throw new Error("Falha ao identificar o produto");
+
+      if (funcoesVinculadas.length > 0) {
+        const { error: errFuncoes } = await supabase.from("produto_funcoes").insert(
+          funcoesVinculadas.map((funcao_id) => ({ produto_id: produtoId, funcao_id })),
+        );
+        if (errFuncoes) throw errFuncoes;
+      }
+
+      toast.success(editando ? "Produto atualizado" : "Produto criado");
+      fechar();
+      carregar();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao salvar", { description: msg });
     }
-    fechar();
-    carregar();
   };
 
   const excluir = async (p: Produto) => {
@@ -249,7 +293,7 @@ function AdminProdutos() {
                     {p.grupo && ` · ${p.grupo}${p.subgrupo ? "/" + p.subgrupo : ""}`}
                   </p>
                   <p className="truncate text-[10px] uppercase text-muted-foreground">
-                    {[p.setor, p.local, perfis.find((pf) => pf.id === p.perfil_id)?.nome].filter(Boolean).join(" · ")}
+                    {[p.funcoes.join(", "), p.local, perfis.find((pf) => pf.id === p.perfil_id)?.nome].filter(Boolean).join(" · ")}
                     {p.valor_unitario != null && ` · R$ ${p.valor_unitario.toFixed(2)}`}
                   </p>
                 </div>
@@ -345,27 +389,61 @@ function AdminProdutos() {
                   {perfis.map((pf) => <option key={pf.id} value={pf.id}>{pf.nome}</option>)}
                 </select>
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Setor">
+              <Field label="Local padrão (produtos novos)">
+                <select
+                  value={form.local}
+                  onChange={(e) => setForm((f) => ({ ...f, local: e.target.value }))}
+                  className={inputCls}
+                >
+                  <option value="">—</option>
+                  {LOCAIS.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </Field>
+
+              <div className="pt-2">
+                <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+                  Funções (setores donos deste produto)
+                </p>
+                <div className="space-y-2">
+                  {funcoesVinculadas.map((funcaoId) => (
+                    <div key={funcaoId} className="flex items-center gap-2">
+                      <span className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                        {nomeFuncao(funcaoId)}
+                      </span>
+                      <motion.button
+                        whileTap={tap}
+                        onClick={() => removerFuncao(funcaoId)}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                        aria-label="Remover função"
+                      >
+                        <Trash2 size={14} />
+                      </motion.button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex items-center gap-2">
                   <select
-                    value={form.setor}
-                    onChange={(e) => setForm((f) => ({ ...f, setor: e.target.value }))}
-                    className={inputCls}
+                    value={funcaoParaAdicionar}
+                    onChange={(e) => setFuncaoParaAdicionar(e.target.value)}
+                    className={`${inputCls} mt-0 flex-1`}
                   >
-                    <option value="">—</option>
-                    {SETORES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    <option value="">— Selecione uma função —</option>
+                    {funcoes
+                      .filter((f) => !funcoesVinculadas.includes(f.id))
+                      .map((f) => (
+                        <option key={f.id} value={f.id}>{f.nome}</option>
+                      ))}
                   </select>
-                </Field>
-                <Field label="Local padrão (produtos novos)">
-                  <select
-                    value={form.local}
-                    onChange={(e) => setForm((f) => ({ ...f, local: e.target.value }))}
-                    className={inputCls}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={tap}
+                    onClick={adicionarFuncao}
+                    disabled={!funcaoParaAdicionar}
+                    className="flex h-9 items-center gap-1 rounded-md border border-border px-2 text-xs font-semibold text-foreground transition hover:border-primary disabled:opacity-40"
                   >
-                    <option value="">—</option>
-                    {LOCAIS.map((l) => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </Field>
+                    <Plus size={13} /> Add
+                  </motion.button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Grupo">

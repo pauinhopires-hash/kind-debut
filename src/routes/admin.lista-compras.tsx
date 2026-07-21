@@ -52,6 +52,7 @@ function AdminListaCompras() {
   const [recebendo, setRecebendo] = useState<string | null>(null);
   const [expandedFornecedorId, setExpandedFornecedorId] = useState<string | null>(null);
   const [visao, setVisao] = useState<"produto" | "fornecedor">("produto");
+  const [funcoes, setFuncoes] = useState<{ id: string; nome: string }[]>([]);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -66,7 +67,7 @@ function AdminListaCompras() {
           comprado,
           comprado_em,
           produto_id,
-          produtos (id, nome, unidade, grupo, setor),
+          produtos (id, nome, unidade, grupo),
           requisicoes!inner (id, numero, status, created_at, usuarios (nome))
         `,
         )
@@ -79,12 +80,25 @@ function AdminListaCompras() {
       const { data: fornecedorRows, error: e3 } = await supabase
         .from("produto_fornecedores")
         .select("produto_id, fornecedores(id, nome_empresa, whatsapp, ativo)");
+      const { data: funcaoRows, error: e4 } = await supabase.from("produto_funcoes").select("produto_id, funcao_id");
+      const { data: funcoesAtivas, error: e5 } = await supabase
+        .from("funcoes")
+        .select("id, nome")
+        .eq("ativo", true)
+        .order("nome");
 
-      if (e1 || e2 || e3) {
-        toast.error("Erro ao carregar", { description: (e1 ?? e2 ?? e3)?.message });
+      if (e1 || e2 || e3 || e4 || e5) {
+        toast.error("Erro ao carregar", { description: (e1 ?? e2 ?? e3 ?? e4 ?? e5)?.message });
         setCarregando(false);
         return;
       }
+      setFuncoes((funcoesAtivas ?? []) as { id: string; nome: string }[]);
+
+      const mapFuncoesPorProduto: Record<string, string[]> = {};
+      (funcaoRows ?? []).forEach((r) => {
+        if (!mapFuncoesPorProduto[r.produto_id]) mapFuncoesPorProduto[r.produto_id] = [];
+        mapFuncoesPorProduto[r.produto_id].push(r.funcao_id);
+      });
 
       // Soma por produto (um produto pode ter linhas em vários locais).
       const mapEstoque: Record<string, number> = {};
@@ -142,11 +156,10 @@ function AdminListaCompras() {
           nome: string;
           unidade: string;
           grupo: string | null;
-          setor: string | null;
         } | null;
         if (!prod) continue;
-        // Filtro de setor (vem do produto)
-        if (setor !== "todos" && prod.setor !== setor) continue;
+        // Filtro de função (produto pode ter várias; basta uma bater)
+        if (setor !== "todos" && !(mapFuncoesPorProduto[prod.id] ?? []).includes(setor)) continue;
         const pid = prod.id;
         if (!mapProduto[pid]) {
           const est = mapEstoque[pid] ?? 0;
@@ -407,10 +420,10 @@ function AdminListaCompras() {
             onChange={(e) => setSetor(e.target.value)}
             className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
-            <option value="todos">Todos os setores</option>
-            <option value="COZINHA">COZINHA</option>
-            <option value="ESTOQUE CENTRAL">ESTOQUE CENTRAL</option>
-            <option value="FRENTE">FRENTE</option>
+            <option value="todos">Todas as funções</option>
+            {funcoes.map((f) => (
+              <option key={f.id} value={f.id}>{f.nome}</option>
+            ))}
           </select>
           <input
             placeholder="Buscar produto..."

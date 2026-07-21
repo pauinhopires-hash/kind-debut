@@ -16,6 +16,7 @@ import {
   BookOpen,
   FileSpreadsheet,
   Building2,
+  Tags,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -175,6 +176,14 @@ function AdminDashboard() {
           descricao: "Cadastro de produtos",
           icon: FileText,
           rota: "/admin/produtos" as const,
+          badge: 0,
+          cor: "bg-zinc-600",
+        },
+        {
+          label: "Funções",
+          descricao: "Setores donos dos produtos",
+          icon: Tags,
+          rota: "/admin/funcoes" as const,
           badge: 0,
           cor: "bg-zinc-600",
         },

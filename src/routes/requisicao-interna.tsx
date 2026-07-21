@@ -23,7 +23,7 @@ type Produto = {
   id: string;
   nome: string;
   unidade: string;
-  setor: string | null;
+  funcoes: string[];
   local: string | null;
   estoque_disponivel: number;
 };
@@ -57,7 +57,11 @@ function RequisicaoInterna() {
   const fetchProdutos = async () => {
     setCarregandoProdutos(true);
     const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
-      supabase.from("produtos").select("id, nome, unidade, setor, local").eq("ativo", true).order("nome"),
+      supabase
+        .from("produtos")
+        .select("id, nome, unidade, local, produto_funcoes(funcoes(nome))")
+        .eq("ativo", true)
+        .order("nome"),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
     ]);
     if (errP) { toast.error("Erro ao carregar produtos"); setCarregandoProdutos(false); return; }
@@ -65,7 +69,11 @@ function RequisicaoInterna() {
     const estoqueMap: Record<string, number> = {};
     (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = (estoqueMap[e.produto_id] ?? 0) + Number(e.quantidade); });
     const lista: Produto[] = (prods || []).map((p: any) => ({
-      id: p.id, nome: p.nome, unidade: p.unidade, setor: p.setor, local: p.local,
+      id: p.id,
+      nome: p.nome,
+      unidade: p.unidade,
+      funcoes: (p.produto_funcoes ?? []).map((v: any) => v.funcoes?.nome).filter(Boolean),
+      local: p.local,
       estoque_disponivel: estoqueMap[p.id] ?? 0,
     }));
     setProdutos(lista);
@@ -75,7 +83,7 @@ function RequisicaoInterna() {
   const produtosFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return produtos.filter((p) => {
-      if (setorFiltro && p.setor !== setorFiltro) return false;
+      if (setorFiltro && !p.funcoes.includes(setorFiltro)) return false;
       if (localFiltro && p.local !== localFiltro) return false;
       if (q && !p.nome.toLowerCase().includes(q)) return false;
       return true;
@@ -84,7 +92,7 @@ function RequisicaoInterna() {
 
   const setoresDisponiveis = useMemo(() => {
     const set = new Set<string>();
-    produtos.forEach((p) => { if (p.setor) set.add(p.setor); });
+    produtos.forEach((p) => p.funcoes.forEach((f) => set.add(f)));
     return Array.from(set).sort();
   }, [produtos]);
 
@@ -187,7 +195,7 @@ function RequisicaoInterna() {
 
               {setoresDisponiveis.length > 1 && (
                 <div className="mb-2 flex flex-wrap gap-1.5">
-                  <FiltroPill label="Todos os setores" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
+                  <FiltroPill label="Todas as funções" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
                   {setoresDisponiveis.map((s) => (
                     <FiltroPill key={s} label={s} ativo={setorFiltro === s} onClick={() => setSetorFiltro(s)} />
                   ))}
@@ -229,7 +237,7 @@ function RequisicaoInterna() {
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white">{p.nome}</p>
                             <p className="truncate text-xs text-gray-400">
-                              {[p.setor, p.local].filter(Boolean).join(" · ")}
+                              {[p.funcoes.join(", "), p.local].filter(Boolean).join(" · ")}
                             </p>
                           </div>
                           <span
