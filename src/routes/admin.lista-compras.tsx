@@ -1,14 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
-import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
+import { linkCotacaoWhatsapp } from "@/lib/whatsapp";
+import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/lista-compras")({
   component: AdminListaCompras,
@@ -25,6 +26,7 @@ type ItemLista = {
   comprado: boolean;
   comprado_em: string | null;
   item_ids: string[]; // ids dos requisicao_itens relacionados
+  fornecedores: { id: string; nome_empresa: string; whatsapp: string }[];
 };
 
 type Grupo = { nome: string; itens: ItemLista[] };
@@ -48,6 +50,7 @@ function AdminListaCompras() {
   const [fechando, setFechando] = useState(false);
   const [requisicoesProntas, setRequisicoesProntas] = useState<RequisicaoPronta[]>([]);
   const [recebendo, setRecebendo] = useState<string | null>(null);
+  const [expandedFornecedorId, setExpandedFornecedorId] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -72,9 +75,12 @@ function AdminListaCompras() {
 
       const { data: itens, error: e1 } = await query;
       const { data: estoqueRows, error: e2 } = await supabase.from("estoque_atual").select("produto_id, quantidade");
+      const { data: fornecedorRows, error: e3 } = await supabase
+        .from("produto_fornecedores")
+        .select("produto_id, fornecedores(id, nome_empresa, whatsapp, ativo)");
 
-      if (e1 || e2) {
-        toast.error("Erro ao carregar", { description: (e1 ?? e2)?.message });
+      if (e1 || e2 || e3) {
+        toast.error("Erro ao carregar", { description: (e1 ?? e2 ?? e3)?.message });
         setCarregando(false);
         return;
       }
@@ -83,6 +89,17 @@ function AdminListaCompras() {
       const mapEstoque: Record<string, number> = {};
       (estoqueRows ?? []).forEach((r) => {
         mapEstoque[r.produto_id] = (mapEstoque[r.produto_id] ?? 0) + Number(r.quantidade);
+      });
+
+      const mapFornecedores: Record<string, { id: string; nome_empresa: string; whatsapp: string }[]> = {};
+      (fornecedorRows ?? []).forEach((r: any) => {
+        if (!r.fornecedores?.ativo) return;
+        if (!mapFornecedores[r.produto_id]) mapFornecedores[r.produto_id] = [];
+        mapFornecedores[r.produto_id].push({
+          id: r.fornecedores.id,
+          nome_empresa: r.fornecedores.nome_empresa,
+          whatsapp: r.fornecedores.whatsapp,
+        });
       });
 
       // Agrupa por requisição (independente do filtro de setor) para saber
@@ -143,6 +160,7 @@ function AdminListaCompras() {
             comprado: false,
             comprado_em: null,
             item_ids: [],
+            fornecedores: mapFornecedores[pid] ?? [],
           };
         }
         mapProduto[pid].pedido += Number(item.quantidade);
@@ -465,64 +483,92 @@ function AdminListaCompras() {
                 <motion.div initial="hidden" animate="visible" variants={staggerList(0.03, 0.02)} className="space-y-1">
                   {g.itens.map((it) => {
                     const estoqueInsuficiente = it.estoque < it.pedido;
+                    const temFornecedores = it.fornecedores.length > 0;
+                    const expandido = expandedFornecedorId === it.produto_id;
                     return (
                       <motion.div
                         key={it.produto_id}
                         variants={listItem}
-                        className={`grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 items-center px-2 py-1.5 rounded transition-shadow hover:shadow-md hover:shadow-primary/5 ${
-                          it.comprado
-                            ? "bg-green-950/30 opacity-70"
-                            : estoqueInsuficiente
-                              ? "bg-zinc-900"
-                              : "bg-zinc-900"
+                        className={`overflow-hidden rounded transition-shadow hover:shadow-md hover:shadow-primary/5 ${
+                          it.comprado ? "bg-green-950/30 opacity-70" : "bg-zinc-900"
                         }`}
                       >
-                        {/* Nome */}
-                        <span className={`text-sm ${it.comprado ? "line-through text-gray-500" : ""}`}>
-                          {estoqueInsuficiente && !it.comprado && (
-                            <AlertTriangle className="w-3 h-3 text-yellow-500 inline mr-1" />
+                        <div className="grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 items-center px-2 py-1.5">
+                          {/* Nome */}
+                          <span className={`text-sm ${it.comprado ? "line-through text-gray-500" : ""}`}>
+                            {estoqueInsuficiente && !it.comprado && (
+                              <AlertTriangle className="w-3 h-3 text-yellow-500 inline mr-1" />
+                            )}
+                            {it.nome}
+                            <span className="text-xs text-gray-500 ml-1">{it.unidade}</span>
+                            {temFornecedores && (
+                              <button
+                                onClick={() => setExpandedFornecedorId(expandido ? null : it.produto_id)}
+                                className="ml-1.5 inline-flex items-center align-middle text-gray-500 hover:text-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                                aria-label="Ver fornecedores"
+                              >
+                                {expandido ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              </button>
+                            )}
+                          </span>
+
+                          {/* Pedido */}
+                          <span className="text-center text-sm text-gray-300">{it.pedido}</span>
+
+                          {/* Estoque */}
+                          <span
+                            className={`text-center text-sm ${estoqueInsuficiente ? "text-yellow-400" : "text-gray-400"}`}
+                          >
+                            {it.estoque}
+                          </span>
+
+                          {/* A comprar (editável) */}
+                          <input
+                            type="number"
+                            min={0}
+                            value={it.aComprar}
+                            disabled={it.comprado}
+                            onChange={(e) => setAComprar(it.produto_id, Number(e.target.value))}
+                            className="w-full text-center text-sm rounded px-1 py-0.5 bg-zinc-800 border border-zinc-700 transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-40"
+                          />
+
+                          {/* Checkbox comprado */}
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => marcarComprado(it)}
+                            disabled={salvando === it.produto_id}
+                            className={`flex items-center justify-center w-7 h-7 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
+                              it.comprado
+                                ? "bg-green-600 border-green-600 text-white"
+                                : "border-zinc-600 hover:border-orange-500"
+                            } disabled:opacity-40`}
+                          >
+                            {salvando === it.produto_id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              it.comprado && <Check className="w-4 h-4" />
+                            )}
+                          </motion.button>
+                        </div>
+                        <AnimatePresence initial={false}>
+                          {expandido && (
+                            <motion.div initial="hidden" animate="visible" exit="exit" variants={collapseY} className="border-t border-zinc-800 px-2 py-2 space-y-1.5">
+                              {it.fornecedores.map((f) => (
+                                <div key={f.id} className="flex items-center justify-between gap-2 rounded bg-zinc-800/60 px-2 py-1.5">
+                                  <span className="truncate text-xs text-gray-300">{f.nome_empresa}</span>
+                                  <a
+                                    href={linkCotacaoWhatsapp(f.whatsapp, it.nome)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex shrink-0 items-center gap-1 rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-emerald-500"
+                                  >
+                                    <MessageCircle size={11} /> Mandar mensagem
+                                  </a>
+                                </div>
+                              ))}
+                            </motion.div>
                           )}
-                          {it.nome}
-                          <span className="text-xs text-gray-500 ml-1">{it.unidade}</span>
-                        </span>
-
-                        {/* Pedido */}
-                        <span className="text-center text-sm text-gray-300">{it.pedido}</span>
-
-                        {/* Estoque */}
-                        <span
-                          className={`text-center text-sm ${estoqueInsuficiente ? "text-yellow-400" : "text-gray-400"}`}
-                        >
-                          {it.estoque}
-                        </span>
-
-                        {/* A comprar (editável) */}
-                        <input
-                          type="number"
-                          min={0}
-                          value={it.aComprar}
-                          disabled={it.comprado}
-                          onChange={(e) => setAComprar(it.produto_id, Number(e.target.value))}
-                          className="w-full text-center text-sm rounded px-1 py-0.5 bg-zinc-800 border border-zinc-700 transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-40"
-                        />
-
-                        {/* Checkbox comprado */}
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => marcarComprado(it)}
-                          disabled={salvando === it.produto_id}
-                          className={`flex items-center justify-center w-7 h-7 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
-                            it.comprado
-                              ? "bg-green-600 border-green-600 text-white"
-                              : "border-zinc-600 hover:border-orange-500"
-                          } disabled:opacity-40`}
-                        >
-                          {salvando === it.produto_id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            it.comprado && <Check className="w-4 h-4" />
-                          )}
-                        </motion.button>
+                        </AnimatePresence>
                       </motion.div>
                     );
                   })}

@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
-import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
+import { linkCotacaoWhatsapp } from "@/lib/whatsapp";
+import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/fornecedores")({
   component: AdminFornecedores,
@@ -19,7 +20,7 @@ type Fornecedor = {
   nome_empresa: string;
   whatsapp: string;
   ativo: boolean;
-  totalProdutos: number;
+  produtosVinculados: { id: string; nome: string }[];
 };
 
 function AdminFornecedores() {
@@ -33,6 +34,7 @@ function AdminFornecedores() {
   const [form, setForm] = useState({ nome_empresa: "", whatsapp: "", ativo: true });
   const [produtosVinculados, setProdutosVinculados] = useState<string[]>([]);
   const [produtoParaAdicionar, setProdutoParaAdicionar] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const carregar = async () => {
     setCarregando(true);
@@ -40,14 +42,20 @@ function AdminFornecedores() {
       supabase.from("produtos").select("id, nome").eq("ativo", true).order("nome"),
       supabase
         .from("fornecedores")
-        .select("id, nome_empresa, whatsapp, ativo, produto_fornecedores(count)")
+        .select("id, nome_empresa, whatsapp, ativo, produto_fornecedores(produtos(id, nome))")
         .order("nome_empresa"),
     ]);
     setProdutos((prods ?? []) as Produto[]);
     setFornecedores(
       ((forns ?? []) as any[]).map((f) => ({
-        ...f,
-        totalProdutos: f.produto_fornecedores?.[0]?.count ?? 0,
+        id: f.id,
+        nome_empresa: f.nome_empresa,
+        whatsapp: f.whatsapp,
+        ativo: f.ativo,
+        produtosVinculados: (f.produto_fornecedores ?? [])
+          .map((v: any) => v.produtos)
+          .filter(Boolean)
+          .sort((a: any, b: any) => a.nome.localeCompare(b.nome)),
       })),
     );
     setCarregando(false);
@@ -197,37 +205,71 @@ function AdminFornecedores() {
               <motion.li
                 key={f.id}
                 variants={listItem}
-                className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
+                className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md hover:shadow-primary/5"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    {f.nome_empresa}
-                    {!f.ativo && <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {f.whatsapp} · {f.totalProdutos} produto(s)
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={tap}
-                    onClick={() => abrirEditar(f)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
-                    aria-label="Editar"
+                <div className="flex items-start justify-between gap-2 px-4 py-3">
+                  <button
+                    onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}
+                    className="flex min-w-0 flex-1 items-start gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                    aria-expanded={expandedId === f.id}
                   >
-                    <Pencil size={14} />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={tap}
-                    onClick={() => excluir(f)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-destructive transition hover:border-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
-                    aria-label="Excluir"
-                  >
-                    <Trash2 size={14} />
-                  </motion.button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {f.nome_empresa}
+                        {!f.ativo && <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {f.whatsapp} · {f.produtosVinculados.length} produto(s)
+                      </p>
+                    </div>
+                    {expandedId === f.id ? <ChevronUp size={16} className="mt-0.5 text-muted-foreground" /> : <ChevronDown size={16} className="mt-0.5 text-muted-foreground" />}
+                  </button>
+                  <div className="flex gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={tap}
+                      onClick={() => abrirEditar(f)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                      aria-label="Editar"
+                    >
+                      <Pencil size={14} />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={tap}
+                      onClick={() => excluir(f)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-destructive transition hover:border-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                      aria-label="Excluir"
+                    >
+                      <Trash2 size={14} />
+                    </motion.button>
+                  </div>
                 </div>
+                <AnimatePresence initial={false}>
+                  {expandedId === f.id && (
+                    <motion.div initial="hidden" animate="visible" exit="exit" variants={collapseY} className="border-t border-border px-4 py-3">
+                      {f.produtosVinculados.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nenhum produto vinculado ainda.</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {f.produtosVinculados.map((p) => (
+                            <li key={p.id} className="flex items-center justify-between gap-2 rounded-md bg-background px-3 py-1.5">
+                              <span className="truncate text-sm text-foreground">{p.nome}</span>
+                              <a
+                                href={linkCotacaoWhatsapp(f.whatsapp, p.nome)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex shrink-0 items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                              >
+                                <MessageCircle size={13} /> Mandar mensagem
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.li>
             ))}
           </motion.ul>
