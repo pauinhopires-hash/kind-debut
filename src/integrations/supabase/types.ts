@@ -627,25 +627,31 @@ export type Database = {
           ativo: boolean
           created_at: string
           email: string
+          funcao_id: string | null
           id: string
           nome: string
           perfil_id: string | null
+          ve_todos_setores: boolean
         }
         Insert: {
           ativo?: boolean
           created_at?: string
           email: string
+          funcao_id?: string | null
           id: string
           nome: string
           perfil_id?: string | null
+          ve_todos_setores?: boolean
         }
         Update: {
           ativo?: boolean
           created_at?: string
           email?: string
+          funcao_id?: string | null
           id?: string
           nome?: string
           perfil_id?: string | null
+          ve_todos_setores?: boolean
         }
         Relationships: [
           {
@@ -653,6 +659,13 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usuarios_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
             referencedColumns: ["id"]
           },
         ]

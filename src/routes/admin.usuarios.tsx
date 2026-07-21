@@ -20,14 +20,18 @@ type Usuario = {
   email: string;
   ativo: boolean;
   perfil_id: string | null;
+  funcao_id: string | null;
+  ve_todos_setores: boolean;
 };
 type Perfil = { id: string; nome: string };
+type Funcao = { id: string; nome: string };
 type RoleRow = { user_id: string; role: string };
 
 function AdminUsuarios() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
+  const [funcoes, setFuncoes] = useState<Funcao[]>([]);
   const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
   const [meuId, setMeuId] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -69,13 +73,15 @@ function AdminUsuarios() {
     setCarregando(true);
     const { data: { session } } = await supabase.auth.getSession();
     setMeuId(session?.user.id ?? null);
-    const [{ data: us }, { data: pfs }, { data: rs }] = await Promise.all([
-      supabase.from("usuarios").select("id, nome, email, ativo, perfil_id").order("nome"),
+    const [{ data: us }, { data: pfs }, { data: fcs }, { data: rs }] = await Promise.all([
+      supabase.from("usuarios").select("id, nome, email, ativo, perfil_id, funcao_id, ve_todos_setores").order("nome"),
       supabase.from("perfis").select("id, nome").order("nome"),
+      supabase.from("funcoes").select("id, nome").eq("ativo", true).order("nome"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     setUsuarios((us ?? []) as Usuario[]);
     setPerfis((pfs ?? []) as Perfil[]);
+    setFuncoes((fcs ?? []) as Funcao[]);
     const ids = new Set<string>();
     ((rs ?? []) as RoleRow[]).forEach((r) => {
       if (r.role === "admin") ids.add(r.user_id);
@@ -95,6 +101,26 @@ function AdminUsuarios() {
       .eq("id", u.id);
     if (error) return toast.error("Erro", { description: error.message });
     toast.success("Perfil atualizado");
+    carregar();
+  };
+
+  const mudarFuncao = async (u: Usuario, funcao_id: string) => {
+    const { error } = await supabase
+      .from("usuarios")
+      .update({ funcao_id: funcao_id || null })
+      .eq("id", u.id);
+    if (error) return toast.error("Erro", { description: error.message });
+    toast.success("Função atualizada");
+    carregar();
+  };
+
+  const toggleVeTodosSetores = async (u: Usuario) => {
+    const { error } = await supabase
+      .from("usuarios")
+      .update({ ve_todos_setores: !u.ve_todos_setores })
+      .eq("id", u.id);
+    if (error) return toast.error("Erro", { description: error.message });
+    toast.success(u.ve_todos_setores ? "Não vê mais todos os setores" : "Agora vê todos os setores");
     carregar();
   };
 
@@ -267,6 +293,26 @@ function AdminUsuarios() {
                     </option>
                   ))}
                 </select>
+                <select
+                  value={u.funcao_id ?? ""}
+                  onChange={(e) => mudarFuncao(u, e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                >
+                  <option value="">— Sem função —</option>
+                  {funcoes.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nome}
+                    </option>
+                  ))}
+                </select>
+                <label className="flex items-center gap-2 text-xs text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={u.ve_todos_setores}
+                    onChange={() => toggleVeTodosSetores(u)}
+                  />
+                  Vê todos os setores (além da função própria)
+                </label>
                 <div className="flex gap-2">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
