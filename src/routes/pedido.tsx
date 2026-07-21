@@ -27,6 +27,7 @@ type Produto = {
   perfil_id: string | null;
   grupo: string | null;
   subgrupo: string | null;
+  funcoes: string[];
 };
 type Perfil = { id: string; nome: string };
 
@@ -60,7 +61,7 @@ function PedidoPage() {
     if (!user) return;
     (async () => {
       setCarregando(true);
-      const [{ data: prods, error: e1 }, { data: est }, { data: pfs }] = await Promise.all([
+      const [{ data: prods, error: e1 }, { data: est }, { data: pfs }, { data: funcaoRows }] = await Promise.all([
         supabase
           .from("produtos")
           .select("id, nome, unidade, perfil_id, grupo, subgrupo")
@@ -68,9 +69,17 @@ function PedidoPage() {
           .order("nome"),
         supabase.from("estoque_atual").select("produto_id, quantidade"),
         supabase.from("perfis").select("id, nome").order("nome"),
+        supabase.from("produto_funcoes").select("produto_id, funcao_id"),
       ]);
       if (e1) toast.error("Erro ao carregar produtos", { description: e1.message });
-      setProdutos((prods ?? []) as Produto[]);
+      const mapFuncoesPorProduto: Record<string, string[]> = {};
+      (funcaoRows ?? []).forEach((r) => {
+        if (!mapFuncoesPorProduto[r.produto_id]) mapFuncoesPorProduto[r.produto_id] = [];
+        mapFuncoesPorProduto[r.produto_id].push(r.funcao_id);
+      });
+      setProdutos(
+        ((prods ?? []) as any[]).map((p) => ({ ...p, funcoes: mapFuncoesPorProduto[p.id] ?? [] })),
+      );
       setPerfis((pfs ?? []) as Perfil[]);
       // Soma por produto (um produto pode ter estoque em vários locais).
       const map: Record<string, number> = {};
@@ -125,24 +134,32 @@ function PedidoPage() {
     [quantidades],
   );
 
+  // Restrição por função: admin, "vê todos os setores" e usuários sem
+  // função atribuída ainda continuam vendo tudo. Só quem tem função E
+  // não tem o escape hatch marcado fica restrito aos produtos dela.
+  const restritoPorFuncao =
+    !isAdmin && !!usuario?.funcao_id && !usuario?.ve_todos_setores;
+
   const produtosFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return produtos.filter((p) => {
+      if (restritoPorFuncao && !p.funcoes.includes(usuario!.funcao_id!)) return false;
       if (perfilFiltro && p.perfil_id !== perfilFiltro) return false;
       if (grupoFiltro && (p.grupo ?? "Outros") !== grupoFiltro) return false;
       if (q && !p.nome.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [produtos, busca, perfilFiltro, grupoFiltro]);
+  }, [produtos, busca, perfilFiltro, grupoFiltro, restritoPorFuncao, usuario]);
 
   const gruposDisponiveis = useMemo(() => {
     const set = new Set<string>();
     produtos.forEach((p) => {
+      if (restritoPorFuncao && !p.funcoes.includes(usuario!.funcao_id!)) return;
       if (perfilFiltro && p.perfil_id !== perfilFiltro) return;
       set.add(p.grupo ?? "Outros");
     });
     return Array.from(set).sort();
-  }, [produtos, perfilFiltro]);
+  }, [produtos, perfilFiltro, restritoPorFuncao, usuario]);
 
   const produtosAgrupados = useMemo(() => {
     const map = new Map<string, Map<string, Produto[]>>();

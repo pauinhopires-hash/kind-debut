@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
+import { useAuth } from "@/hooks/use-auth";
 import { easeOutExpo, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/requisicao-interna")({
@@ -24,6 +25,7 @@ type Produto = {
   nome: string;
   unidade: string;
   funcoes: string[];
+  funcaoIds: string[];
   local: string | null;
   estoque_disponivel: number;
 };
@@ -32,6 +34,7 @@ type ItemRequisicao = { produto_id: string; nome: string; unidade: string; quant
 function RequisicaoInterna() {
   const navigate = useNavigate();
   const { voltar, avancar } = useVoltarAvancar("/");
+  const { user, usuario, isAdmin, loading: authLoading } = useAuth();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [itens, setItens, limparItens] = usePersistedState<ItemRequisicao[]>("requisicao_interna_itens", []);
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
@@ -39,27 +42,25 @@ function RequisicaoInterna() {
   const [observacao, setObservacao, limparObservacao] = usePersistedState("requisicao_interna_observacao", "");
   const [loading, setLoading] = useState(false);
   const [carregandoProdutos, setCarregandoProdutos] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [setorFiltro, setSetorFiltro] = useState("");
   const [localFiltro, setLocalFiltro] = useState("");
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate({ to: "/login" }); return; }
-      setUserId(session.user.id);
-      fetchProdutos();
-    };
-    init();
-  }, []);
+    if (!authLoading && !user) navigate({ to: "/login" });
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchProdutos();
+  }, [user]);
 
   const fetchProdutos = async () => {
     setCarregandoProdutos(true);
     const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
       supabase
         .from("produtos")
-        .select("id, nome, unidade, local, produto_funcoes(funcoes(nome))")
+        .select("id, nome, unidade, local, produto_funcoes(funcoes(id, nome))")
         .eq("ativo", true)
         .order("nome"),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
@@ -73,6 +74,7 @@ function RequisicaoInterna() {
       nome: p.nome,
       unidade: p.unidade,
       funcoes: (p.produto_funcoes ?? []).map((v: any) => v.funcoes?.nome).filter(Boolean),
+      funcaoIds: (p.produto_funcoes ?? []).map((v: any) => v.funcoes?.id).filter(Boolean),
       local: p.local,
       estoque_disponivel: estoqueMap[p.id] ?? 0,
     }));
@@ -80,27 +82,39 @@ function RequisicaoInterna() {
     setCarregandoProdutos(false);
   };
 
+  // Restrição por função: admin, "vê todos os setores" e usuários sem
+  // função atribuída ainda continuam vendo tudo.
+  const restritoPorFuncao =
+    !isAdmin && !!usuario?.funcao_id && !usuario?.ve_todos_setores;
+
   const produtosFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return produtos.filter((p) => {
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return false;
       if (setorFiltro && !p.funcoes.includes(setorFiltro)) return false;
       if (localFiltro && p.local !== localFiltro) return false;
       if (q && !p.nome.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [produtos, busca, setorFiltro, localFiltro]);
+  }, [produtos, busca, setorFiltro, localFiltro, restritoPorFuncao, usuario]);
 
   const setoresDisponiveis = useMemo(() => {
     const set = new Set<string>();
-    produtos.forEach((p) => p.funcoes.forEach((f) => set.add(f)));
+    produtos.forEach((p) => {
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return;
+      p.funcoes.forEach((f) => set.add(f));
+    });
     return Array.from(set).sort();
-  }, [produtos]);
+  }, [produtos, restritoPorFuncao, usuario]);
 
   const locaisDisponiveis = useMemo(() => {
     const set = new Set<string>();
-    produtos.forEach((p) => { if (p.local) set.add(p.local); });
+    produtos.forEach((p) => {
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return;
+      if (p.local) set.add(p.local);
+    });
     return Array.from(set).sort();
-  }, [produtos]);
+  }, [produtos, restritoPorFuncao, usuario]);
 
   const adicionarItem = () => {
     if (!produtoSelecionado) { toast.error("Selecione um produto"); return; }
@@ -119,13 +133,13 @@ function RequisicaoInterna() {
   const removerItem = (id: string) => setItens(itens.filter(i => i.produto_id !== id));
 
   const enviarRequisicao = async () => {
-    if (!userId) { toast.error("Sessão expirada"); return; }
+    if (!user) { toast.error("Sessão expirada"); return; }
     if (itens.length === 0) { toast.error("Adicione ao menos um item"); return; }
     setLoading(true);
     try {
       const { data: req, error: errReq } = await supabase
         .from("requisicoes_internas")
-        .insert({ usuario_id: userId, observacao: observacao || null, status: "pendente" })
+        .insert({ usuario_id: user.id, observacao: observacao || null, status: "pendente" })
         .select().single();
       if (errReq) throw errReq;
       const { error: errItens } = await supabase.from("requisicao_interna_itens")

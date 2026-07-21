@@ -8,6 +8,8 @@ export type UsuarioRow = {
   email: string;
   perfil_id: string | null;
   ativo: boolean;
+  funcao_id: string | null;
+  ve_todos_setores: boolean;
 };
 
 export type PerfilRow = { id: string; nome: string };
@@ -50,7 +52,7 @@ export function useAuth() {
     (async () => {
       const { data: u } = await supabase
         .from("usuarios")
-        .select("id, nome, email, perfil_id, ativo")
+        .select("id, nome, email, perfil_id, ativo, funcao_id, ve_todos_setores")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
