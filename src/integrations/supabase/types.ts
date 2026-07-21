@@ -32,6 +32,66 @@ export type Database = {
         }
         Relationships: []
       }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome_empresa: string
+          whatsapp: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome_empresa: string
+          whatsapp: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome_empresa?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      produto_fornecedores: {
+        Row: {
+          criado_em: string
+          fornecedor_id: string
+          id: string
+          produto_id: string
+        }
+        Insert: {
+          criado_em?: string
+          fornecedor_id: string
+          id?: string
+          produto_id: string
+        }
+        Update: {
+          criado_em?: string
+          fornecedor_id?: string
+          id?: string
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_fornecedores_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedores_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estoque_atual: {
         Row: {
           atualizado_em: string

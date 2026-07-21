@@ -15,6 +15,7 @@ import {
   Factory,
   BookOpen,
   FileSpreadsheet,
+  Building2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -122,6 +123,14 @@ function AdminDashboard() {
           rota: "/admin/lista-compras" as const,
           badge: 0,
           cor: "bg-orange-700",
+        },
+        {
+          label: "Fornecedores",
+          descricao: "Empresas e WhatsApp por produto",
+          icon: Building2,
+          rota: "/admin/fornecedores" as const,
+          badge: 0,
+          cor: "bg-orange-800",
         },
       ],
     },
