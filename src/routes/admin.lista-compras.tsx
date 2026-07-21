@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
-import { linkCotacaoWhatsapp } from "@/lib/whatsapp";
+import { linkCotacaoWhatsapp, linkCotacaoMultiplaWhatsapp } from "@/lib/whatsapp";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/lista-compras")({
@@ -51,6 +51,7 @@ function AdminListaCompras() {
   const [requisicoesProntas, setRequisicoesProntas] = useState<RequisicaoPronta[]>([]);
   const [recebendo, setRecebendo] = useState<string | null>(null);
   const [expandedFornecedorId, setExpandedFornecedorId] = useState<string | null>(null);
+  const [visao, setVisao] = useState<"produto" | "fornecedor">("produto");
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -345,6 +346,25 @@ function AdminListaCompras() {
   const totalItens = grupos.reduce((acc, g) => acc + g.itens.length, 0);
   const comprados = grupos.reduce((acc, g) => acc + g.itens.filter((i) => i.comprado).length, 0);
 
+  // Agrupa por fornecedor os itens que ainda faltam comprar (mesmo filtro
+  // do copiarWhatsApp). Um item com vários fornecedores aparece em cada um.
+  const porFornecedor = useMemo(() => {
+    const mapa = new Map<
+      string,
+      { id: string; nome_empresa: string; whatsapp: string; itens: { nome: string; quantidade: number; unidade: string }[] }
+    >();
+    for (const g of grupos) {
+      for (const it of g.itens) {
+        if (it.comprado || it.aComprar <= 0) continue;
+        for (const f of it.fornecedores) {
+          if (!mapa.has(f.id)) mapa.set(f.id, { ...f, itens: [] });
+          mapa.get(f.id)!.itens.push({ nome: it.nome, quantidade: it.aComprar, unidade: it.unidade });
+        }
+      }
+    }
+    return Array.from(mapa.values()).sort((a, b) => a.nome_empresa.localeCompare(b.nome_empresa));
+  }, [grupos]);
+
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white p-4">
       <div className="max-w-2xl md:max-w-3xl mx-auto">
@@ -460,7 +480,63 @@ function AdminListaCompras() {
           </motion.div>
         )}
 
-        {carregando ? (
+        {!carregando && (
+          <div className="flex gap-2 mb-4">
+            {(["produto", "fornecedor"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setVisao(v)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                  visao === v
+                    ? "border-orange-500 bg-orange-500 text-white"
+                    : "border-zinc-700 bg-zinc-900 text-gray-400 hover:border-orange-500/60"
+                }`}
+              >
+                {v === "produto" ? "Por produto" : "Por fornecedor"}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {visao === "fornecedor" ? (
+          carregando ? (
+            <SkeletonStack rows={4} />
+          ) : porFornecedor.length === 0 ? (
+            <motion.p initial="hidden" animate="visible" variants={fadeIn} className="text-gray-500 text-sm text-center py-12">
+              Nenhum item a comprar tem fornecedor vinculado ainda.
+            </motion.p>
+          ) : (
+            <motion.div initial="hidden" animate="visible" variants={staggerList()} className="space-y-3">
+              {porFornecedor.map((f) => (
+                <motion.div
+                  key={f.id}
+                  variants={listItem}
+                  className="rounded-xl bg-zinc-900 p-4 transition-shadow hover:shadow-md hover:shadow-primary/5"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <p className="text-sm font-semibold text-white">{f.nome_empresa}</p>
+                    <a
+                      href={linkCotacaoMultiplaWhatsapp(f.whatsapp, f.itens)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex shrink-0 items-center gap-1.5 rounded bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                    >
+                      <MessageCircle size={13} /> Mandar mensagem ({f.itens.length})
+                    </a>
+                  </div>
+                  <ul className="space-y-1">
+                    {f.itens.map((it, idx) => (
+                      <li key={idx} className="flex items-center justify-between text-sm text-gray-300">
+                        <span>{it.nome}</span>
+                        <span className="text-gray-400">{it.quantidade} {it.unidade}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ))}
+            </motion.div>
+          )
+        ) : carregando ? (
           <SkeletonStack rows={6} />
         ) : gruposFiltrados.length === 0 ? (
           <motion.p initial="hidden" animate="visible" variants={fadeIn} className="text-gray-500 text-sm text-center py-12">
