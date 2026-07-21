@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   Building2,
   Tags,
+  IdCard,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -180,10 +181,10 @@ function AdminDashboard() {
           cor: "bg-zinc-600",
         },
         {
-          label: "Funções",
-          descricao: "Setores donos dos produtos",
+          label: "Setores",
+          descricao: "Departamentos donos dos produtos",
           icon: Tags,
-          rota: "/admin/funcoes" as const,
+          rota: "/admin/setores" as const,
           badge: 0,
           cor: "bg-zinc-600",
         },
@@ -234,6 +235,14 @@ function AdminDashboard() {
           descricao: "Gerenciar acessos",
           icon: Users,
           rota: "/admin/usuarios" as const,
+          badge: 0,
+          cor: "bg-zinc-600",
+        },
+        {
+          label: "Perfis",
+          descricao: "Cargos das pessoas (líder, pizzaiolo...)",
+          icon: IdCard,
+          rota: "/admin/perfis" as const,
           badge: 0,
           cor: "bg-zinc-600",
         },

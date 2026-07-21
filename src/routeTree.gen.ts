@@ -21,16 +21,17 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as AdminSetoresRouteImport } from './routes/admin.setores'
 import { Route as AdminRequisicoesInternasRouteImport } from './routes/admin.requisicoes-internas'
 import { Route as AdminRequisicoesRouteImport } from './routes/admin.requisicoes'
 import { Route as AdminReceitasRouteImport } from './routes/admin.receitas'
 import { Route as AdminProdutosRouteImport } from './routes/admin.produtos'
 import { Route as AdminProducaoRouteImport } from './routes/admin.producao'
+import { Route as AdminPerfisRouteImport } from './routes/admin.perfis'
 import { Route as AdminMovimentacoesRouteImport } from './routes/admin.movimentacoes'
 import { Route as AdminListaComprasRouteImport } from './routes/admin.lista-compras'
 import { Route as AdminIndicadoresRouteImport } from './routes/admin.indicadores'
 import { Route as AdminImportarEstoqueRouteImport } from './routes/admin.importar-estoque'
-import { Route as AdminFuncoesRouteImport } from './routes/admin.funcoes'
 import { Route as AdminFornecedoresRouteImport } from './routes/admin.fornecedores'
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
@@ -95,6 +96,11 @@ const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSetoresRoute = AdminSetoresRouteImport.update({
+  id: '/setores',
+  path: '/setores',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRequisicoesInternasRoute =
   AdminRequisicoesInternasRouteImport.update({
     id: '/requisicoes-internas',
@@ -121,6 +127,11 @@ const AdminProducaoRoute = AdminProducaoRouteImport.update({
   path: '/producao',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPerfisRoute = AdminPerfisRouteImport.update({
+  id: '/perfis',
+  path: '/perfis',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMovimentacoesRoute = AdminMovimentacoesRouteImport.update({
   id: '/movimentacoes',
   path: '/movimentacoes',
@@ -139,11 +150,6 @@ const AdminIndicadoresRoute = AdminIndicadoresRouteImport.update({
 const AdminImportarEstoqueRoute = AdminImportarEstoqueRouteImport.update({
   id: '/importar-estoque',
   path: '/importar-estoque',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminFuncoesRoute = AdminFuncoesRouteImport.update({
-  id: '/funcoes',
-  path: '/funcoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFornecedoresRoute = AdminFornecedoresRouteImport.update({
@@ -175,16 +181,17 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
-  '/admin/funcoes': typeof AdminFuncoesRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
+  '/admin/perfis': typeof AdminPerfisRoute
   '/admin/producao': typeof AdminProducaoRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/receitas': typeof AdminReceitasRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
   '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
+  '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/pedido/editar/$id': typeof PedidoEditarIdRoute
@@ -201,16 +208,17 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
-  '/admin/funcoes': typeof AdminFuncoesRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
+  '/admin/perfis': typeof AdminPerfisRoute
   '/admin/producao': typeof AdminProducaoRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/receitas': typeof AdminReceitasRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
   '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
+  '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin': typeof AdminIndexRoute
   '/pedido/editar/$id': typeof PedidoEditarIdRoute
@@ -229,16 +237,17 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
-  '/admin/funcoes': typeof AdminFuncoesRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
   '/admin/movimentacoes': typeof AdminMovimentacoesRoute
+  '/admin/perfis': typeof AdminPerfisRoute
   '/admin/producao': typeof AdminProducaoRoute
   '/admin/produtos': typeof AdminProdutosRoute
   '/admin/receitas': typeof AdminReceitasRoute
   '/admin/requisicoes': typeof AdminRequisicoesRoute
   '/admin/requisicoes-internas': typeof AdminRequisicoesInternasRoute
+  '/admin/setores': typeof AdminSetoresRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/pedido/editar/$id': typeof PedidoEditarIdRoute
@@ -258,16 +267,17 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin/estoque'
     | '/admin/fornecedores'
-    | '/admin/funcoes'
     | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
+    | '/admin/perfis'
     | '/admin/producao'
     | '/admin/produtos'
     | '/admin/receitas'
     | '/admin/requisicoes'
     | '/admin/requisicoes-internas'
+    | '/admin/setores'
     | '/admin/usuarios'
     | '/admin/'
     | '/pedido/editar/$id'
@@ -284,16 +294,17 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin/estoque'
     | '/admin/fornecedores'
-    | '/admin/funcoes'
     | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
+    | '/admin/perfis'
     | '/admin/producao'
     | '/admin/produtos'
     | '/admin/receitas'
     | '/admin/requisicoes'
     | '/admin/requisicoes-internas'
+    | '/admin/setores'
     | '/admin/usuarios'
     | '/admin'
     | '/pedido/editar/$id'
@@ -311,16 +322,17 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin/estoque'
     | '/admin/fornecedores'
-    | '/admin/funcoes'
     | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
     | '/admin/movimentacoes'
+    | '/admin/perfis'
     | '/admin/producao'
     | '/admin/produtos'
     | '/admin/receitas'
     | '/admin/requisicoes'
     | '/admin/requisicoes-internas'
+    | '/admin/setores'
     | '/admin/usuarios'
     | '/admin/'
     | '/pedido/editar/$id'
@@ -425,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/setores': {
+      id: '/admin/setores'
+      path: '/setores'
+      fullPath: '/admin/setores'
+      preLoaderRoute: typeof AdminSetoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/requisicoes-internas': {
       id: '/admin/requisicoes-internas'
       path: '/requisicoes-internas'
@@ -460,6 +479,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProducaoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/perfis': {
+      id: '/admin/perfis'
+      path: '/perfis'
+      fullPath: '/admin/perfis'
+      preLoaderRoute: typeof AdminPerfisRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/movimentacoes': {
       id: '/admin/movimentacoes'
       path: '/movimentacoes'
@@ -486,13 +512,6 @@ declare module '@tanstack/react-router' {
       path: '/importar-estoque'
       fullPath: '/admin/importar-estoque'
       preLoaderRoute: typeof AdminImportarEstoqueRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/funcoes': {
-      id: '/admin/funcoes'
-      path: '/funcoes'
-      fullPath: '/admin/funcoes'
-      preLoaderRoute: typeof AdminFuncoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/fornecedores': {
@@ -522,16 +541,17 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminEstoqueRoute: typeof AdminEstoqueRoute
   AdminFornecedoresRoute: typeof AdminFornecedoresRoute
-  AdminFuncoesRoute: typeof AdminFuncoesRoute
   AdminImportarEstoqueRoute: typeof AdminImportarEstoqueRoute
   AdminIndicadoresRoute: typeof AdminIndicadoresRoute
   AdminListaComprasRoute: typeof AdminListaComprasRoute
   AdminMovimentacoesRoute: typeof AdminMovimentacoesRoute
+  AdminPerfisRoute: typeof AdminPerfisRoute
   AdminProducaoRoute: typeof AdminProducaoRoute
   AdminProdutosRoute: typeof AdminProdutosRoute
   AdminReceitasRoute: typeof AdminReceitasRoute
   AdminRequisicoesRoute: typeof AdminRequisicoesRoute
   AdminRequisicoesInternasRoute: typeof AdminRequisicoesInternasRoute
+  AdminSetoresRoute: typeof AdminSetoresRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -539,16 +559,17 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminEstoqueRoute: AdminEstoqueRoute,
   AdminFornecedoresRoute: AdminFornecedoresRoute,
-  AdminFuncoesRoute: AdminFuncoesRoute,
   AdminImportarEstoqueRoute: AdminImportarEstoqueRoute,
   AdminIndicadoresRoute: AdminIndicadoresRoute,
   AdminListaComprasRoute: AdminListaComprasRoute,
   AdminMovimentacoesRoute: AdminMovimentacoesRoute,
+  AdminPerfisRoute: AdminPerfisRoute,
   AdminProducaoRoute: AdminProducaoRoute,
   AdminProdutosRoute: AdminProdutosRoute,
   AdminReceitasRoute: AdminReceitasRoute,
   AdminRequisicoesRoute: AdminRequisicoesRoute,
   AdminRequisicoesInternasRoute: AdminRequisicoesInternasRoute,
+  AdminSetoresRoute: AdminSetoresRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

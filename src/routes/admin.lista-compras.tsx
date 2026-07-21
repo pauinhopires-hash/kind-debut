@@ -420,7 +420,7 @@ function AdminListaCompras() {
             onChange={(e) => setSetor(e.target.value)}
             className="px-3 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
-            <option value="todos">Todas as funções</option>
+            <option value="todos">Todos os setores</option>
             {funcoes.map((f) => (
               <option key={f.id} value={f.id}>{f.nome}</option>
             ))}

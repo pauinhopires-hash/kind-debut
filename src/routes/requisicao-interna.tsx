@@ -209,7 +209,7 @@ function RequisicaoInterna() {
 
               {setoresDisponiveis.length > 1 && (
                 <div className="mb-2 flex flex-wrap gap-1.5">
-                  <FiltroPill label="Todas as funções" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
+                  <FiltroPill label="Todos os setores" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
                   {setoresDisponiveis.map((s) => (
                     <FiltroPill key={s} label={s} ativo={setorFiltro === s} onClick={() => setSetorFiltro(s)} />
                   ))}

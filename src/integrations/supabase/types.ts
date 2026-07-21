@@ -288,19 +288,22 @@ export type Database = {
       }
       perfis: {
         Row: {
-          created_at: string
+          criado_em: string
           id: string
           nome: string
+          slug: string
         }
         Insert: {
-          created_at?: string
+          criado_em?: string
           id?: string
           nome: string
+          slug: string
         }
         Update: {
-          created_at?: string
+          criado_em?: string
           id?: string
           nome?: string
+          slug?: string
         }
         Relationships: []
       }

@@ -402,7 +402,7 @@ function AdminProdutos() {
 
               <div className="pt-2">
                 <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-                  Funções (setores donos deste produto)
+                  Setores (departamentos donos deste produto)
                 </p>
                 <div className="space-y-2">
                   {funcoesVinculadas.map((funcaoId) => (
@@ -414,7 +414,7 @@ function AdminProdutos() {
                         whileTap={tap}
                         onClick={() => removerFuncao(funcaoId)}
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
-                        aria-label="Remover função"
+                        aria-label="Remover setor"
                       >
                         <Trash2 size={14} />
                       </motion.button>
@@ -427,7 +427,7 @@ function AdminProdutos() {
                     onChange={(e) => setFuncaoParaAdicionar(e.target.value)}
                     className={`${inputCls} mt-0 flex-1`}
                   >
-                    <option value="">— Selecione uma função —</option>
+                    <option value="">— Selecione um setor —</option>
                     {funcoes
                       .filter((f) => !funcoesVinculadas.includes(f.id))
                       .map((f) => (

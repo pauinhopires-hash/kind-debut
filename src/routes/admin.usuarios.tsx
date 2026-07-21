@@ -281,37 +281,43 @@ function AdminUsuarios() {
                     <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                   </div>
                 </div>
-                <select
-                  value={u.perfil_id ?? ""}
-                  onChange={(e) => mudarPerfil(u, e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
-                >
-                  <option value="">— Sem perfil —</option>
-                  {perfis.map((pf) => (
-                    <option key={pf.id} value={pf.id}>
-                      {pf.nome}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={u.funcao_id ?? ""}
-                  onChange={(e) => mudarFuncao(u, e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
-                >
-                  <option value="">— Sem função —</option>
-                  {funcoes.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.nome}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Perfil (cargo)
+                  <select
+                    value={u.perfil_id ?? ""}
+                    onChange={(e) => mudarPerfil(u, e.target.value)}
+                    className="mt-0.5 w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                  >
+                    <option value="">— Sem perfil —</option>
+                    {perfis.map((pf) => (
+                      <option key={pf.id} value={pf.id}>
+                        {pf.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Setor
+                  <select
+                    value={u.funcao_id ?? ""}
+                    onChange={(e) => mudarFuncao(u, e.target.value)}
+                    className="mt-0.5 w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                  >
+                    <option value="">— Sem setor —</option>
+                    {funcoes.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="flex items-center gap-2 text-xs text-foreground">
                   <input
                     type="checkbox"
                     checked={u.ve_todos_setores}
                     onChange={() => toggleVeTodosSetores(u)}
                   />
-                  Vê todos os setores (além da função própria)
+                  Vê todos os setores (além do setor próprio)
                 </label>
                 <div className="flex gap-2">
                   <motion.button

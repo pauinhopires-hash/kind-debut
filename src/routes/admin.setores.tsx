@@ -8,17 +8,17 @@ import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
-export const Route = createFileRoute("/admin/funcoes")({
-  component: AdminFuncoes,
+export const Route = createFileRoute("/admin/setores")({
+  component: AdminSetores,
 });
 
-type Funcao = { id: string; nome: string; ativo: boolean };
+type Setor = { id: string; nome: string; ativo: boolean };
 
-function AdminFuncoes() {
+function AdminSetores() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
-  const [funcoes, setFuncoes] = useState<Funcao[]>([]);
+  const [setores, setSetores] = useState<Setor[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [editando, setEditando] = useState<Funcao | null>(null);
+  const [editando, setEditando] = useState<Setor | null>(null);
   const [novo, setNovo] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState({ nome: "", ativo: true });
@@ -26,7 +26,7 @@ function AdminFuncoes() {
   const carregar = async () => {
     setCarregando(true);
     const { data } = await supabase.from("funcoes").select("id, nome, ativo").order("nome");
-    setFuncoes((data ?? []) as Funcao[]);
+    setSetores((data ?? []) as Setor[]);
     setCarregando(false);
   };
 
@@ -40,7 +40,7 @@ function AdminFuncoes() {
     setNovo(true);
   };
 
-  const abrirEditar = (f: Funcao) => {
+  const abrirEditar = (f: Setor) => {
     setForm({ nome: f.nome, ativo: f.ativo });
     setEditando(f);
     setNovo(false);
@@ -52,7 +52,7 @@ function AdminFuncoes() {
   };
 
   const salvar = async () => {
-    if (!form.nome.trim()) return toast.error("Informe o nome da função");
+    if (!form.nome.trim()) return toast.error("Informe o nome do setor");
     setSalvando(true);
     try {
       if (editando) {
@@ -61,13 +61,13 @@ function AdminFuncoes() {
           .update({ nome: form.nome.trim().toUpperCase(), ativo: form.ativo })
           .eq("id", editando.id);
         if (error) throw error;
-        toast.success("Função atualizada");
+        toast.success("Setor atualizado");
       } else {
         const { error } = await supabase
           .from("funcoes")
           .insert({ nome: form.nome.trim().toUpperCase(), ativo: form.ativo });
         if (error) throw error;
-        toast.success("Função criada");
+        toast.success("Setor criado");
       }
       fechar();
       carregar();
@@ -79,11 +79,11 @@ function AdminFuncoes() {
     }
   };
 
-  const excluir = async (f: Funcao) => {
-    if (!confirm(`Excluir a função "${f.nome}"? Produtos vinculados perdem esse vínculo.`)) return;
+  const excluir = async (f: Setor) => {
+    if (!confirm(`Excluir o setor "${f.nome}"? Produtos vinculados perdem esse vínculo.`)) return;
     const { error } = await supabase.from("funcoes").delete().eq("id", f.id);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
-    toast.success("Função excluída");
+    toast.success("Setor excluído");
     carregar();
   };
 
@@ -111,7 +111,7 @@ function AdminFuncoes() {
           </motion.button>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-primary">Admin</p>
-            <h1 className="text-lg font-bold text-foreground">Funções ({funcoes.length})</h1>
+            <h1 className="text-lg font-bold text-foreground">Setores ({setores.length})</h1>
           </div>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -119,25 +119,26 @@ function AdminFuncoes() {
             onClick={abrirNovo}
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
-            <Plus size={14} /> Nova
+            <Plus size={14} /> Novo
           </motion.button>
         </div>
       </header>
 
       <div className="mx-auto max-w-md md:max-w-2xl space-y-3 px-6 pt-4">
         <p className="text-xs text-muted-foreground">
-          Funções são os setores/departamentos donos de cada produto (ex: Cozinha, Frente). Um produto pode
-          ter várias. Edite essa lista livremente — não é mais fixa no código.
+          Setores são os departamentos/áreas donos de cada produto (ex: Cozinha, Frente). Um produto pode
+          ter vários. Edite essa lista livremente — não é mais fixa no código. Isso é diferente de "Perfil"
+          (cargo da pessoa, ex: Líder, Pizzaiolo) — veja a tela Perfis pra isso.
         </p>
         {carregando ? (
           <SkeletonStack rows={4} />
-        ) : funcoes.length === 0 ? (
+        ) : setores.length === 0 ? (
           <motion.p initial="hidden" animate="visible" variants={fadeIn} className="py-12 text-center text-sm text-muted-foreground">
-            Nenhuma função cadastrada.
+            Nenhum setor cadastrado.
           </motion.p>
         ) : (
           <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
-            {funcoes.map((f) => (
+            {setores.map((f) => (
               <motion.li
                 key={f.id}
                 variants={listItem}
@@ -145,7 +146,7 @@ function AdminFuncoes() {
               >
                 <p className="truncate text-sm font-semibold text-foreground">
                   {f.nome}
-                  {!f.ativo && <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativa)</span>}
+                  {!f.ativo && <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>}
                 </p>
                 <div className="flex gap-1">
                   <motion.button
@@ -191,7 +192,7 @@ function AdminFuncoes() {
             >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-base font-bold text-foreground">
-                  {editando ? "Editar função" : "Nova função"}
+                  {editando ? "Editar setor" : "Novo setor"}
                 </h2>
                 <motion.button
                   whileTap={tap}
@@ -217,7 +218,7 @@ function AdminFuncoes() {
                     checked={form.ativo}
                     onChange={(e) => setForm((f) => ({ ...f, ativo: e.target.checked }))}
                   />
-                  Ativa
+                  Ativo
                 </label>
               </div>
               <motion.button
