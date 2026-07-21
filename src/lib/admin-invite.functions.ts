@@ -8,6 +8,10 @@ const InviteSchema = z.object({
   redirectTo: z.string().url().max(500),
 });
 
+const DeleteUserSchema = z.object({
+  userId: z.string().uuid(),
+});
+
 export const inviteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InviteSchema.parse(data))
@@ -45,6 +49,46 @@ export const inviteUser = createServerFn({ method: "POST" })
       return { success: true as const, userId: invited.user?.id ?? null };
     } catch (err) {
       console.error("[inviteUser] Unexpected error:", err instanceof Error ? JSON.stringify(err, Object.getOwnPropertyNames(err)) : err);
+      const message = err instanceof Error && err.message ? err.message : JSON.stringify(err);
+      return {
+        success: false as const,
+        error: message || String(err),
+      };
+    }
+  });
+
+export const deleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => DeleteUserSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    try {
+      const { supabase, userId } = context;
+
+      if (data.userId === userId) {
+        return { success: false as const, error: "Você não pode excluir a si mesmo" };
+      }
+
+      const { data: roles, error: rolesErr } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      if (rolesErr) {
+        return { success: false as const, error: `Falha ao verificar permissões: ${rolesErr.message}` };
+      }
+      const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
+      if (!isAdmin) {
+        return { success: false as const, error: "Apenas administradores podem excluir usuários" };
+      }
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+      if (error) {
+        console.error("[deleteUser] Supabase error:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        return { success: false as const, error: error.message || JSON.stringify(error) };
+      }
+      return { success: true as const };
+    } catch (err) {
+      console.error("[deleteUser] Unexpected error:", err instanceof Error ? JSON.stringify(err, Object.getOwnPropertyNames(err)) : err);
       const message = err instanceof Error && err.message ? err.message : JSON.stringify(err);
       return {
         success: false as const,

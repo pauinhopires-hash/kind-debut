@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Shield, ShieldOff, UserPlus, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Shield, ShieldOff, UserPlus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { inviteUser } from "@/lib/admin-invite.functions";
+import { inviteUser, deleteUser } from "@/lib/admin-invite.functions";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { listItem, staggerList, tap } from "@/lib/motion";
@@ -34,7 +34,9 @@ function AdminUsuarios() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteNome, setInviteNome] = useState("");
   const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const [excluindo, setExcluindo] = useState<string | null>(null);
   const invite = useServerFn(inviteUser);
+  const remover = useServerFn(deleteUser);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +134,32 @@ function AdminUsuarios() {
       toast.success("Promovido a admin");
     }
     carregar();
+  };
+
+  const excluirUsuario = async (u: Usuario) => {
+    if (u.id === meuId) {
+      toast.error("Você não pode excluir a si mesmo");
+      return;
+    }
+    if (adminIds.has(u.id) && adminIds.size <= 1) {
+      toast.error("Não é possível excluir o último admin do sistema");
+      return;
+    }
+    if (!confirm(`Excluir "${u.nome}" (${u.email}) permanentemente? Essa ação não pode ser desfeita.`)) return;
+    setExcluindo(u.id);
+    try {
+      const result = await remover({ data: { userId: u.id } });
+      if (!result.success) {
+        toast.error("Falha ao excluir", { description: result.error });
+        return;
+      }
+      toast.success("Usuário excluído");
+      carregar();
+    } catch (err) {
+      toast.error("Falha ao excluir", { description: (err as Error).message });
+    } finally {
+      setExcluindo(null);
+    }
   };
 
   return (
@@ -257,6 +285,18 @@ function AdminUsuarios() {
                     {ehAdmin ? <ShieldOff size={12} /> : <Shield size={12} />}
                     {ehAdmin ? "Remover admin" : "Tornar admin"}
                   </motion.button>
+                  {u.id !== meuId && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={tap}
+                      onClick={() => excluirUsuario(u)}
+                      disabled={excluindo === u.id}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-destructive transition hover:border-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 disabled:opacity-50"
+                      aria-label="Excluir usuário"
+                    >
+                      {excluindo === u.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    </motion.button>
+                  )}
                 </div>
               </motion.div>
             );
