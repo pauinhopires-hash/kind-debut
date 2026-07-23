@@ -271,12 +271,12 @@ function AdminRequisicoes() {
                       {lista.length === 0 ? (
                         <SkeletonStack rows={2} />
                       ) : (
-                        <ul className="space-y-1.5">
+                        <ul className="space-y-2">
                           {lista.map((it) => (
-                            <li key={it.id} className="flex items-center justify-between gap-2 text-sm">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className={`truncate ${it.nome_custom ? "font-semibold text-primary" : "text-foreground"}`}>
+                            <li key={it.id} className="rounded-lg bg-background/60 px-2 py-2 text-sm">
+                              <div className="min-w-0">
+                                <div className="flex items-start gap-1.5">
+                                  <span className={`break-words ${it.nome_custom ? "font-semibold text-primary" : "text-foreground"}`}>
                                     {it.nome_custom || it.produtos?.nome || "—"}
                                   </span>
                                   {pendente && (
@@ -291,13 +291,13 @@ function AdminRequisicoes() {
                                   )}
                                 </div>
                                 {it.nome_custom && (
-                                  <p className="truncate text-[10px] text-muted-foreground">
+                                  <p className="break-words text-[10px] text-muted-foreground">
                                     original: {it.produtos?.nome ?? "—"}
                                   </p>
                                 )}
                               </div>
                               {pendente ? (
-                                <div className="flex items-center gap-1">
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1">
                                   <motion.button
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => atualizarQtd(r.id, it.id, it.quantidade - 1)}
@@ -326,20 +326,20 @@ function AdminRequisicoes() {
                                   >
                                     <Plus size={12} />
                                   </motion.button>
-                                  <span className={`ml-1 w-16 text-[10px] uppercase ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "font-bold text-primary" : "text-muted-foreground"}`}>
+                                  <span className={`ml-1 text-[10px] uppercase ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "font-bold text-primary" : "text-muted-foreground"}`}>
                                     {it.unidade || it.produtos?.unidade || ""}
                                   </span>
                                   <motion.button
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => excluirItem(r.id, it.id, it.produtos?.nome ?? "item")}
-                                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                                    className="ml-auto flex h-7 w-7 items-center justify-center rounded-md border border-destructive/40 text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
                                     aria-label="Excluir"
                                   >
                                     <Trash2 size={12} />
                                   </motion.button>
                                 </div>
                               ) : (
-                                <span className={`font-mono tabular-nums ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                <span className={`mt-1 block font-mono text-xs tabular-nums ${it.unidade && it.produtos && it.unidade !== it.produtos.unidade ? "text-primary font-bold" : "text-muted-foreground"}`}>
                                   {it.quantidade} {it.unidade || it.produtos?.unidade || ""}
                                 </span>
                               )}
