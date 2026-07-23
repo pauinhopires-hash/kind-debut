@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { linkCotacaoWhatsapp, linkCotacaoMultiplaWhatsapp } from "@/lib/whatsapp";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
@@ -41,6 +42,7 @@ type RequisicaoPronta = {
 
 function AdminListaCompras() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [data, setData] = useState(format(new Date(), "yyyy-MM-dd"));
   const [setor, setSetor] = useState("todos");
   const [busca, setBusca] = useState("");
@@ -313,7 +315,7 @@ function AdminListaCompras() {
         toast.info("Nada para fechar — todos os itens já estão comprados.");
         return;
       }
-      if (!confirm(`Marcar ${pendentes.length} item(ns) como comprado(s)?`)) return;
+      if (!(await confirm({ message: `Marcar ${pendentes.length} item(ns) como comprado(s)?`, confirmLabel: "Marcar" }))) return;
       for (const it of pendentes) {
         await marcarComprado(it);
       }
@@ -667,6 +669,7 @@ function AdminListaCompras() {
           </>
         )}
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

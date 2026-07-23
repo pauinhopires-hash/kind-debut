@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { collapseY, easeOutExpo, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/historico")({
@@ -47,6 +48,7 @@ function formatarDataHora(iso: string) {
 function HistoricoPage() {
   const navigate = useNavigate();
   const { voltar, avancar } = useVoltarAvancar("/");
+  const { confirm, ConfirmDialog } = useConfirm();
   const { user, loading } = useAuth();
   const [reqs, setReqs] = useState<Requisicao[]>([]);
   const [itens, setItens] = useState<Record<string, Item[]>>({});
@@ -93,7 +95,7 @@ function HistoricoPage() {
   };
 
   const cancelar = async (r: Requisicao) => {
-    if (!confirm("Cancelar esta requisição?")) return;
+    if (!(await confirm({ message: "Cancelar esta requisição?", confirmLabel: "Cancelar", destructive: true }))) return;
     const { data, error } = await supabase
       .from("requisicoes")
       .update({ status: "cancelada" })
@@ -330,6 +332,7 @@ function HistoricoPage() {
           )}
         </AnimatePresence>
       </div>
+      {ConfirmDialog}
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { inviteUser, deleteUser } from "@/lib/admin-invite.functions";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -29,6 +30,7 @@ type RoleRow = { user_id: string; role: string };
 
 function AdminUsuarios() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [funcoes, setFuncoes] = useState<Funcao[]>([]);
@@ -171,7 +173,7 @@ function AdminUsuarios() {
       toast.error("Não é possível excluir o último admin do sistema");
       return;
     }
-    if (!confirm(`Excluir "${u.nome}" (${u.email}) permanentemente? Essa ação não pode ser desfeita.`)) return;
+    if (!(await confirm({ message: `Excluir "${u.nome}" (${u.email}) permanentemente? Essa ação não pode ser desfeita.`, confirmLabel: "Excluir", destructive: true }))) return;
     setExcluindo(u.id);
     try {
       const result = await remover({ data: { userId: u.id } });
@@ -356,6 +358,7 @@ function AdminUsuarios() {
           </motion.div>
         )}
       </div>
+      {ConfirmDialog}
     </main>
   );
 }

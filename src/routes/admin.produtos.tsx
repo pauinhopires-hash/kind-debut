@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/produtos")({
@@ -36,6 +37,7 @@ function AdminProdutos() {
   const navigate = useNavigate();
   const { voltar, avancar } = useVoltarAvancar("/admin");
   const { usuario } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [funcoes, setFuncoes] = useState<Funcao[]>([]);
@@ -194,7 +196,7 @@ function AdminProdutos() {
   };
 
   const excluir = async (p: Produto) => {
-    if (!confirm(`Excluir "${p.nome}"?`)) return;
+    if (!(await confirm({ message: `Excluir "${p.nome}"?`, confirmLabel: "Excluir", destructive: true }))) return;
     const { error } = await supabase.from("produtos").delete().eq("id", p.id);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
     toast.success("Produto excluído");
@@ -482,6 +484,7 @@ function AdminProdutos() {
           </motion.div>
         )}
       </AnimatePresence>
+      {ConfirmDialog}
     </main>
   );
 }

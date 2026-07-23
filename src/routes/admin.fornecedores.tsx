@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { linkCotacaoWhatsapp } from "@/lib/whatsapp";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
@@ -25,6 +26,7 @@ type Fornecedor = {
 
 function AdminFornecedores() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -146,7 +148,7 @@ function AdminFornecedores() {
   };
 
   const excluir = async (f: Fornecedor) => {
-    if (!confirm(`Excluir o fornecedor "${f.nome_empresa}"?`)) return;
+    if (!(await confirm({ message: `Excluir o fornecedor "${f.nome_empresa}"?`, confirmLabel: "Excluir", destructive: true }))) return;
     const { error } = await supabase.from("fornecedores").delete().eq("id", f.id);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
     toast.success("Fornecedor excluído");
@@ -389,6 +391,7 @@ function AdminFornecedores() {
           </motion.div>
         )}
       </AnimatePresence>
+      {ConfirmDialog}
     </main>
   );
 }

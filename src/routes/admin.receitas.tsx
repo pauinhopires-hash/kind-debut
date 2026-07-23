@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/receitas")({
@@ -32,6 +33,7 @@ type Filtro = "todas" | "pendente" | "aprovada" | "rejeitada";
 
 function AdminReceitas() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [receitas, setReceitas] = useState<Receita[]>([]);
   const [filtro, setFiltro] = useState<Filtro>("todas");
@@ -74,7 +76,7 @@ function AdminReceitas() {
 
   const mudarStatus = async (r: Receita, status: "aprovada" | "rejeitada") => {
     const label = status === "aprovada" ? "Aprovar" : "Rejeitar";
-    if (!confirm(`${label} a ficha técnica de "${r.produtos?.nome}"?`)) return;
+    if (!(await confirm({ message: `${label} a ficha técnica de "${r.produtos?.nome}"?`, confirmLabel: label, destructive: status === "rejeitada" }))) return;
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("receitas")
@@ -192,7 +194,7 @@ function AdminReceitas() {
   };
 
   const excluir = async (r: Receita) => {
-    if (!confirm(`Excluir a ficha técnica de "${r.produtos?.nome}"?`)) return;
+    if (!(await confirm({ message: `Excluir a ficha técnica de "${r.produtos?.nome}"?`, confirmLabel: "Excluir", destructive: true }))) return;
     const { error } = await supabase.from("receitas").delete().eq("id", r.id);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
     toast.success("Receita excluída");
@@ -464,6 +466,7 @@ function AdminReceitas() {
           </motion.div>
         )}
       </AnimatePresence>
+      {ConfirmDialog}
     </main>
   );
 }

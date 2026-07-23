@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/requisicoes")({
@@ -42,6 +43,7 @@ function formatar(iso: string) {
 
 function AdminRequisicoes() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, promptText, ConfirmDialog } = useConfirm();
   const [reqs, setReqs] = useState<Req[]>([]);
   const [itens, setItens] = useState<Record<string, Item[]>>({});
   const [aberto, setAberto] = useState<string | null>(null);
@@ -81,7 +83,7 @@ function AdminRequisicoes() {
 
   const mudarStatus = async (r: Req, status: "aprovada" | "cancelada") => {
     const label = status === "aprovada" ? "Aprovar" : "Cancelar";
-    if (!confirm(`${label} esta requisição?`)) return;
+    if (!(await confirm({ message: `${label} esta requisição?`, confirmLabel: label, destructive: status === "cancelada" }))) return;
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("requisicoes")
@@ -119,7 +121,7 @@ function AdminRequisicoes() {
   };
 
   const excluirItem = async (reqId: string, itemId: string, nome: string) => {
-    if (!confirm(`Excluir "${nome}" da requisição?`)) return;
+    if (!(await confirm({ message: `Excluir "${nome}" da requisição?`, confirmLabel: "Excluir", destructive: true }))) return;
     const { error } = await supabase.from("requisicao_itens").delete().eq("id", itemId);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
     toast.success("Item excluído");
@@ -129,7 +131,7 @@ function AdminRequisicoes() {
   const editarNome = async (reqId: string, it: Item) => {
     const original = it.produtos?.nome ?? "";
     const atual = it.nome_custom ?? original;
-    const novo = prompt(`Editar nome do produto (apenas nesta requisição):\nOriginal: ${original}`, atual);
+    const novo = await promptText({ title: "Editar nome do produto", message: `Só nesta requisição.\nOriginal: ${original}`, defaultValue: atual });
     if (novo === null) return;
     const trimmed = novo.trim();
     const valor = !trimmed || trimmed === original ? null : trimmed;
@@ -398,6 +400,7 @@ function AdminRequisicoes() {
           </motion.ul>
         )}
       </div>
+      {ConfirmDialog}
     </main>
   );
 }

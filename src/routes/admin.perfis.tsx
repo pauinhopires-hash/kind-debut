@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/perfis")({
@@ -31,6 +32,7 @@ function slugify(nome: string) {
 
 function AdminPerfis() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<Perfil | null>(null);
@@ -92,7 +94,7 @@ function AdminPerfis() {
   };
 
   const excluir = async (p: Perfil) => {
-    if (!confirm(`Excluir o perfil "${p.nome}"?`)) return;
+    if (!(await confirm({ message: `Excluir o perfil "${p.nome}"?`, confirmLabel: "Excluir", destructive: true }))) return;
     const { error } = await supabase.from("perfis").delete().eq("id", p.id);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
     toast.success("Perfil excluído");
@@ -243,6 +245,7 @@ function AdminPerfis() {
           </motion.div>
         )}
       </AnimatePresence>
+      {ConfirmDialog}
     </main>
   );
 }

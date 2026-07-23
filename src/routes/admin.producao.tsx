@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/producao")({
@@ -32,6 +33,7 @@ type Ordem = {
 
 function AdminProducao() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [receitas, setReceitas] = useState<Receita[]>([]);
   const [ordens, setOrdens] = useState<Ordem[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -98,7 +100,7 @@ function AdminProducao() {
   };
 
   const cancelar = async (ordem: Ordem) => {
-    if (!confirm("Cancelar esta ordem de produção?")) return;
+    if (!(await confirm({ message: "Cancelar esta ordem de produção?", confirmLabel: "Cancelar", destructive: true }))) return;
     setProcessando(ordem.id);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -436,6 +438,7 @@ function AdminProducao() {
           </motion.div>
         )}
       </AnimatePresence>
+      {ConfirmDialog}
     </div>
   );
 }

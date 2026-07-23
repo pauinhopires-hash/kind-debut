@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { useConfirm } from "@/hooks/use-confirm";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/setores")({
@@ -16,6 +17,7 @@ type Setor = { id: string; nome: string; ativo: boolean };
 
 function AdminSetores() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
+  const { confirm, ConfirmDialog } = useConfirm();
   const [setores, setSetores] = useState<Setor[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<Setor | null>(null);
@@ -80,7 +82,7 @@ function AdminSetores() {
   };
 
   const excluir = async (f: Setor) => {
-    if (!confirm(`Excluir o setor "${f.nome}"? Produtos vinculados perdem esse vínculo.`)) return;
+    if (!(await confirm({ message: `Excluir o setor "${f.nome}"? Produtos vinculados perdem esse vínculo.`, confirmLabel: "Excluir", destructive: true }))) return;
     const { error } = await supabase.from("funcoes").delete().eq("id", f.id);
     if (error) return toast.error("Erro ao excluir", { description: error.message });
     toast.success("Setor excluído");
@@ -234,6 +236,7 @@ function AdminSetores() {
           </motion.div>
         )}
       </AnimatePresence>
+      {ConfirmDialog}
     </main>
   );
 }
