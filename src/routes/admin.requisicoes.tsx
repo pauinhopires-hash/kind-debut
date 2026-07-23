@@ -29,7 +29,7 @@ type Item = {
   produtos: { nome: string; unidade: string } | null;
 };
 
-type Filtro = "todas" | "pendente" | "aprovada" | "cancelada";
+type Filtro = "todas" | "pendente" | "aprovada" | "recebida" | "cancelada";
 
 function formatar(iso: string) {
   return new Date(iso).toLocaleString("pt-BR", {
@@ -163,6 +163,7 @@ function AdminRequisicoes() {
   const filtros: { id: Filtro; label: string }[] = [
     { id: "pendente", label: "Pendentes" },
     { id: "aprovada", label: "Aprovadas" },
+    { id: "recebida", label: "Recebidas" },
     { id: "cancelada", label: "Canceladas" },
     { id: "todas", label: "Todas" },
   ];

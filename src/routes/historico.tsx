@@ -222,9 +222,11 @@ function HistoricoPage() {
                               ? "bg-destructive/15 text-destructive"
                               : r.status === "aprovada"
                                 ? "bg-emerald-500/15 text-emerald-500"
-                                : pendente
-                                  ? "bg-primary/15 text-primary"
-                                  : "bg-muted text-muted-foreground"
+                                : r.status === "recebida"
+                                  ? "bg-blue-500/15 text-blue-500"
+                                  : pendente
+                                    ? "bg-primary/15 text-primary"
+                                    : "bg-muted text-muted-foreground"
                           }`}
                         >
                           <motion.span
@@ -235,12 +237,14 @@ function HistoricoPage() {
                                 ? "bg-destructive"
                                 : r.status === "aprovada"
                                   ? "bg-emerald-500"
-                                  : pendente
-                                    ? "bg-primary"
-                                    : "bg-muted-foreground"
+                                  : r.status === "recebida"
+                                    ? "bg-blue-500"
+                                    : pendente
+                                      ? "bg-primary"
+                                      : "bg-muted-foreground"
                             }`}
                           />
-                          {r.status}
+                          {r.status === "recebida" ? "Recebida" : r.status}
                         </span>
                       </div>
                       <motion.span
