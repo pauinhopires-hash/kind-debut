@@ -9,9 +9,24 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+// Rotas onde o usuário vê o resultado de uma decisão (aprovado/rejeitado) sobre
+// algo que ele mesmo pediu. Cada uma tem sua própria marca de "última visita"
+// em localStorage, comparada com requisicoes/requisicoes_internas/receitas.decidido_em.
+const FONTES_NOVIDADES = [
+  { rota: "/historico" as const, chave: "novidades_visto_historico", tabela: "requisicoes" as const },
+  { rota: "/historico-interno" as const, chave: "novidades_visto_historico_interno", tabela: "requisicoes_internas" as const },
+  { rota: "/solicitar-receita" as const, chave: "novidades_visto_solicitar_receita", tabela: "receitas" as const },
+];
+
+function marcarComoVisto(rota: string) {
+  const fonte = FONTES_NOVIDADES.find((f) => f.rota === rota);
+  if (fonte) localStorage.setItem(fonte.chave, new Date().toISOString());
+}
+
 function Index() {
   const navigate = useNavigate();
   const [nomeUsuario, setNomeUsuario] = useState("");
+  const [novidades, setNovidades] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const init = async () => {
@@ -25,7 +40,25 @@ function Index() {
       const { data } = await supabase.from("usuarios").select("nome").eq("id", session.user.id).maybeSingle();
       setNomeUsuario(data?.nome ?? session.user.email?.split("@")[0] ?? "");
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" });
-      if (isAdmin) navigate({ to: "/admin" });
+      if (isAdmin) { navigate({ to: "/admin" }); return; }
+
+      const resultados = await Promise.all(
+        FONTES_NOVIDADES.map(async (f) => {
+          const desde = localStorage.getItem(f.chave);
+          if (!desde) {
+            // primeira vez com essa feature: não conta histórico antigo, só o que vier depois
+            localStorage.setItem(f.chave, new Date().toISOString());
+            return [f.rota, 0] as const;
+          }
+          const { count } = await supabase
+            .from(f.tabela)
+            .select("id", { count: "exact", head: true })
+            .eq("usuario_id", session.user.id)
+            .gt("decidido_em", desde);
+          return [f.rota, count ?? 0] as const;
+        }),
+      );
+      setNovidades(Object.fromEntries(resultados));
     };
     init();
   }, []);
@@ -114,14 +147,16 @@ function Index() {
           variants={staggerList(0.07, 0.12)}
           className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"
         >
-          {acoes.map((acao) => (
+          {acoes.map((acao) => {
+            const qtdNovidades = novidades[acao.rota] ?? 0;
+            return (
             <motion.button
               key={acao.rota}
               variants={listItem}
               whileHover={{ y: -3, scale: 1.01 }}
               whileTap={{ scale: 0.985 }}
               transition={{ type: "spring", stiffness: 400, damping: 26 }}
-              onClick={() => navigate({ to: acao.rota })}
+              onClick={() => { marcarComoVisto(acao.rota); navigate({ to: acao.rota }); }}
               className={`group relative w-full overflow-hidden bg-gradient-to-r ${acao.cor} rounded-xl p-4 flex items-center gap-4 text-left shadow-lg shadow-black/40`}
             >
               {/* shimmer on hover */}
@@ -129,12 +164,18 @@ function Index() {
               <div className="bg-white/20 rounded-lg p-2.5 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-4deg]">
                 <acao.icon size={22} className="text-white" />
               </div>
-              <div className="relative">
+              <div className="relative flex-1">
                 <p className="font-bold text-white">{acao.label}</p>
                 <p className="text-white/70 text-sm">{acao.descricao}</p>
               </div>
+              {qtdNovidades > 0 && (
+                <span className="relative shrink-0 rounded-full bg-white text-black text-xs font-bold px-2 py-1 min-w-[24px] text-center">
+                  {qtdNovidades}
+                </span>
+              )}
             </motion.button>
-          ))}
+            );
+          })}
         </motion.div>
       </div>
     </div>

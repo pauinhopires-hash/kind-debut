@@ -1,19 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
@@ -23,6 +11,15 @@ import { listItem, staggerList, tap } from "@/lib/motion";
 export const Route = createFileRoute("/admin/indicadores")({
   component: AdminIndicadores,
 });
+
+// recharts é pesado (~400KB) — carrega só quando a tela realmente renderiza os
+// gráficos, em vez de entrar no chunk inicial da rota.
+const ProdutosBarChart = lazy(() =>
+  import("@/components/indicadores-charts").then((m) => ({ default: m.ProdutosBarChart })),
+);
+const StatusPieChart = lazy(() =>
+  import("@/components/indicadores-charts").then((m) => ({ default: m.StatusPieChart })),
+);
 
 type Periodo = 7 | 30 | 90 | 0; // 0 = tudo
 
@@ -187,24 +184,9 @@ function AdminIndicadores() {
                 <p className="text-sm text-muted-foreground">Sem dados no período.</p>
               ) : (
                 <div style={{ width: "100%", height: 220 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={topProdutos} layout="vertical" margin={{ left: 8, right: 16 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                      <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
-                      <YAxis
-                        type="category"
-                        dataKey="nome"
-                        width={110}
-                        stroke="var(--muted-foreground)"
-                        fontSize={11}
-                        tickFormatter={(v: string) => (v.length > 16 ? v.slice(0, 16) + "…" : v)}
-                      />
-                      <Tooltip
-                        contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 12 }}
-                      />
-                      <Bar dataKey="quantidade" fill="#f97316" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<SkeletonStack rows={1} />}>
+                    <ProdutosBarChart data={topProdutos} />
+                  </Suspense>
                 </div>
               )}
             </motion.div>
@@ -218,16 +200,9 @@ function AdminIndicadores() {
               ) : (
                 <div className="flex items-center gap-4">
                   <div style={{ width: 140, height: 140 }}>
-                    <ResponsiveContainer>
-                      <PieChart>
-                        <Pie data={funilInternas} dataKey="valor" nameKey="status" innerRadius={35} outerRadius={60}>
-                          {funilInternas.map((entry) => (
-                            <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "#71717a"} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 12 }} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<SkeletonStack rows={1} />}>
+                      <StatusPieChart data={funilInternas} colors={STATUS_COLORS} />
+                    </Suspense>
                   </div>
                   <ul className="space-y-1.5 text-sm">
                     {funilInternas.map((f) => (
