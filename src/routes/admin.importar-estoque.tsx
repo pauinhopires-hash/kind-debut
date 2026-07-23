@@ -496,7 +496,7 @@ function AdminImportarEstoque() {
                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${statusColor}`}>
                           {statusLabel}
                         </span>
-                        <p className="text-sm text-white truncate">{l.nome || "(sem nome)"}</p>
+                        <p className="text-sm text-white break-words">{l.nome || "(sem nome)"}</p>
                         <span className="text-xs text-gray-500">· {l.local}</span>
                       </div>
                       {l.erro ? (
@@ -559,8 +559,8 @@ function AdminImportarEstoque() {
                   >
                     {a.incluir && <X size={12} />}
                   </button>
-                  <p className="flex-1 text-sm text-white truncate">{a.nome}</p>
-                  <span className="text-xs text-gray-400">{a.quantidade} → 0</span>
+                  <p className="min-w-0 flex-1 text-sm text-white break-words">{a.nome}</p>
+                  <span className="shrink-0 text-xs text-gray-400">{a.quantidade} → 0</span>
                 </div>
               ))}
             </div>

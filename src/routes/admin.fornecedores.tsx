@@ -254,7 +254,7 @@ function AdminFornecedores() {
                         <ul className="space-y-1.5">
                           {f.produtosVinculados.map((p) => (
                             <li key={p.id} className="flex items-center justify-between gap-2 rounded-md bg-background px-3 py-1.5">
-                              <span className="truncate text-sm text-foreground">{p.nome}</span>
+                              <span className="min-w-0 flex-1 break-words text-sm text-foreground">{p.nome}</span>
                               <a
                                 href={linkCotacaoWhatsapp(f.whatsapp, p.nome)}
                                 target="_blank"

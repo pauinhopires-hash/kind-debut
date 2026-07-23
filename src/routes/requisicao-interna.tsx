@@ -248,8 +248,8 @@ function RequisicaoInterna() {
                           onClick={() => setProdutoSelecionado(selecionado ? "" : p.id)}
                           className="flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left"
                         >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-white">{p.nome}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words text-sm font-medium text-white">{p.nome}</p>
                             <p className="truncate text-xs text-gray-400">
                               {[p.funcoes.join(", "), p.local].filter(Boolean).join(" · ")}
                             </p>
@@ -306,14 +306,14 @@ function RequisicaoInterna() {
                     layout
                     className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2 transition-colors hover:bg-zinc-800/80 hover:shadow-md hover:shadow-primary/5"
                   >
-                    <div className="min-w-0">
-                      <p className="text-white font-medium truncate">{item.nome}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-medium break-words">{item.nome}</p>
                       <p className="text-gray-400 text-sm">{item.quantidade} {item.unidade}</p>
                     </div>
                     <motion.button
                       whileTap={tap}
                       onClick={() => removerItem(item.produto_id)}
-                      className="text-red-400 hover:text-red-300 rounded-md p-2 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="shrink-0 text-red-400 hover:text-red-300 rounded-md p-2 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                       aria-label={`Remover ${item.nome}`}
                     >
                       <Trash2 size={16} />

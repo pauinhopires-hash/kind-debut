@@ -200,9 +200,9 @@ function AdminEstoque() {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     {totalProduto <= 0 && <AlertTriangle size={14} className="text-orange-400 flex-shrink-0" />}
-                    <p className="text-white font-medium truncate flex-1">{p.nome}</p>
+                    <p className="min-w-0 flex-1 break-words text-white font-medium">{p.nome}</p>
                     {verSomado && (
-                      <p className={`text-sm font-semibold ${totalProduto <= 0 ? "text-orange-400" : "text-gray-300"}`}>
+                      <p className={`shrink-0 text-sm font-semibold ${totalProduto <= 0 ? "text-orange-400" : "text-gray-300"}`}>
                         {totalProduto} {p.unidade}
                       </p>
                     )}

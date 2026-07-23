@@ -282,7 +282,7 @@ function AdminProdutos() {
                 className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">
+                  <p className="break-words text-sm font-semibold text-foreground">
                     {p.nome}
                     {!p.ativo && (
                       <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>

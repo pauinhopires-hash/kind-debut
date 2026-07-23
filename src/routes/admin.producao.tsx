@@ -296,7 +296,7 @@ function AdminProducao() {
                           {new Date(o.criado_em).toLocaleDateString("pt-BR")}
                         </span>
                       </div>
-                      <p className="text-white font-medium truncate">{o.receitas?.produtos?.nome ?? "—"}</p>
+                      <p className="text-white font-medium break-words">{o.receitas?.produtos?.nome ?? "—"}</p>
                       <p className="text-gray-400 text-sm">
                         {o.quantidade_produzida ?? o.quantidade_planejada} {o.receitas?.unidade_rendimento}
                         {o.quantidade_produzida == null && " (planejado)"}
