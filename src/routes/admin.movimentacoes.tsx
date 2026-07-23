@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
+import { FiltroPill } from "@/components/filtro-pill";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
@@ -21,7 +22,9 @@ type Movimentacao = {
   observacao: string | null;
   created_at: string;
   produto_id: string;
+  local: string | null;
   produtos: { nome: string; unidade: string } | null;
+  setores: string[];
 };
 
 function AdminMovimentacoes() {
@@ -30,6 +33,8 @@ function AdminMovimentacoes() {
   const [loading, setLoading] = useState(true);
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroProduto, setFiltroProduto] = useState<string>("");
+  const [setorFiltro, setSetorFiltro] = useState("");
+  const [localFiltro, setLocalFiltro] = useState("");
 
   useEffect(() => {
     fetchMovimentacoes();
@@ -39,18 +44,39 @@ function AdminMovimentacoes() {
     setLoading(true);
     const { data, error } = await supabase
       .from("movimentacoes_estoque")
-      .select("id, tipo, quantidade, estoque_antes, estoque_depois, observacao, created_at, produto_id, produtos(nome, unidade)")
+      .select(
+        "id, tipo, quantidade, estoque_antes, estoque_depois, observacao, created_at, produto_id, local, produtos(nome, unidade, produto_funcoes(funcoes(id, nome)))",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) { toast.error("Erro ao carregar movimentações"); setLoading(false); return; }
-    setMovimentacoes((data || []) as Movimentacao[]);
+    setMovimentacoes(
+      ((data ?? []) as any[]).map((m) => ({
+        ...m,
+        setores: (m.produtos?.produto_funcoes ?? []).map((v: any) => v.funcoes?.nome).filter(Boolean),
+      })),
+    );
     setLoading(false);
   };
+
+  const setoresDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    movimentacoes.forEach((m) => m.setores.forEach((s) => set.add(s)));
+    return Array.from(set).sort();
+  }, [movimentacoes]);
+
+  const locaisDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    movimentacoes.forEach((m) => { if (m.local) set.add(m.local); });
+    return Array.from(set).sort();
+  }, [movimentacoes]);
 
   const movFiltradas = movimentacoes.filter(m => {
     const tipoOk = filtroTipo === "todos" || m.tipo === filtroTipo;
     const prodOk = !filtroProduto || m.produtos?.nome.toLowerCase().includes(filtroProduto.toLowerCase());
-    return tipoOk && prodOk;
+    const setorOk = !setorFiltro || m.setores.includes(setorFiltro);
+    const localOk = !localFiltro || m.local === localFiltro;
+    return tipoOk && prodOk && setorOk && localOk;
   });
 
   const tipoIcon = (tipo: string) => {
@@ -120,6 +146,22 @@ function AdminMovimentacoes() {
             onChange={e => setFiltroProduto(e.target.value)}
             className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40"
           />
+          {setoresDisponiveis.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              <FiltroPill label="Todos os setores" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
+              {setoresDisponiveis.map((s) => (
+                <FiltroPill key={s} label={s} ativo={setorFiltro === s} onClick={() => setSetorFiltro(s)} />
+              ))}
+            </div>
+          )}
+          {locaisDisponiveis.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              <FiltroPill label="Todos os locais" ativo={localFiltro === ""} onClick={() => setLocalFiltro("")} />
+              {locaisDisponiveis.map((l) => (
+                <FiltroPill key={l} label={l} ativo={localFiltro === l} onClick={() => setLocalFiltro(l)} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Stats rápidos */}

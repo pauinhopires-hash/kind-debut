@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
+import { FiltroPill } from "@/components/filtro-pill";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { easeOutExpo, listItem, staggerList, tap } from "@/lib/motion";
@@ -27,7 +28,9 @@ type Produto = {
   perfil_id: string | null;
   grupo: string | null;
   subgrupo: string | null;
+  local: string | null;
   funcoes: string[];
+  funcaoIds: string[];
 };
 type Perfil = { id: string; nome: string };
 
@@ -52,6 +55,8 @@ function PedidoPage() {
   const [busca, setBusca] = useState("");
   const [perfilFiltro, setPerfilFiltro] = useState<string>("");
   const [grupoFiltro, setGrupoFiltro] = useState<string>("");
+  const [setorFiltro, setSetorFiltro] = useState<string>("");
+  const [localFiltro, setLocalFiltro] = useState<string>("");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -61,24 +66,22 @@ function PedidoPage() {
     if (!user) return;
     (async () => {
       setCarregando(true);
-      const [{ data: prods, error: e1 }, { data: est }, { data: pfs }, { data: funcaoRows }] = await Promise.all([
+      const [{ data: prods, error: e1 }, { data: est }, { data: pfs }] = await Promise.all([
         supabase
           .from("produtos")
-          .select("id, nome, unidade, perfil_id, grupo, subgrupo")
+          .select("id, nome, unidade, perfil_id, grupo, subgrupo, local, produto_funcoes(funcoes(id, nome))")
           .eq("ativo", true)
           .order("nome"),
         supabase.from("estoque_atual").select("produto_id, quantidade"),
         supabase.from("perfis").select("id, nome").order("nome"),
-        supabase.from("produto_funcoes").select("produto_id, funcao_id"),
       ]);
       if (e1) toast.error("Erro ao carregar produtos", { description: e1.message });
-      const mapFuncoesPorProduto: Record<string, string[]> = {};
-      (funcaoRows ?? []).forEach((r) => {
-        if (!mapFuncoesPorProduto[r.produto_id]) mapFuncoesPorProduto[r.produto_id] = [];
-        mapFuncoesPorProduto[r.produto_id].push(r.funcao_id);
-      });
       setProdutos(
-        ((prods ?? []) as any[]).map((p) => ({ ...p, funcoes: mapFuncoesPorProduto[p.id] ?? [] })),
+        ((prods ?? []) as any[]).map((p) => ({
+          ...p,
+          funcoes: (p.produto_funcoes ?? []).map((v: any) => v.funcoes?.nome).filter(Boolean),
+          funcaoIds: (p.produto_funcoes ?? []).map((v: any) => v.funcoes?.id).filter(Boolean),
+        })),
       );
       setPerfis((pfs ?? []) as Perfil[]);
       // Soma por produto (um produto pode ter estoque em vários locais).
@@ -143,23 +146,43 @@ function PedidoPage() {
   const produtosFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
     return produtos.filter((p) => {
-      if (restritoPorFuncao && !p.funcoes.includes(usuario!.funcao_id!)) return false;
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return false;
       if (perfilFiltro && p.perfil_id !== perfilFiltro) return false;
       if (grupoFiltro && (p.grupo ?? "Outros") !== grupoFiltro) return false;
+      if (setorFiltro && !p.funcoes.includes(setorFiltro)) return false;
+      if (localFiltro && p.local !== localFiltro) return false;
       if (q && !p.nome.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [produtos, busca, perfilFiltro, grupoFiltro, restritoPorFuncao, usuario]);
+  }, [produtos, busca, perfilFiltro, grupoFiltro, setorFiltro, localFiltro, restritoPorFuncao, usuario]);
 
   const gruposDisponiveis = useMemo(() => {
     const set = new Set<string>();
     produtos.forEach((p) => {
-      if (restritoPorFuncao && !p.funcoes.includes(usuario!.funcao_id!)) return;
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return;
       if (perfilFiltro && p.perfil_id !== perfilFiltro) return;
       set.add(p.grupo ?? "Outros");
     });
     return Array.from(set).sort();
   }, [produtos, perfilFiltro, restritoPorFuncao, usuario]);
+
+  const setoresDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => {
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return;
+      p.funcoes.forEach((f) => set.add(f));
+    });
+    return Array.from(set).sort();
+  }, [produtos, restritoPorFuncao, usuario]);
+
+  const locaisDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => {
+      if (restritoPorFuncao && !p.funcaoIds.includes(usuario!.funcao_id!)) return;
+      if (p.local) set.add(p.local);
+    });
+    return Array.from(set).sort();
+  }, [produtos, restritoPorFuncao, usuario]);
 
   const produtosAgrupados = useMemo(() => {
     const map = new Map<string, Map<string, Produto[]>>();
@@ -314,6 +337,23 @@ function PedidoPage() {
           onChange={(e) => setBusca(e.target.value)}
           className="mb-3 w-full rounded-md border border-border bg-card px-4 py-3 text-foreground outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-orange-500/40"
         />
+
+        {setoresDisponiveis.length > 1 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <FiltroPill label="Todos os setores" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
+            {setoresDisponiveis.map((s) => (
+              <FiltroPill key={s} label={s} ativo={setorFiltro === s} onClick={() => setSetorFiltro(s)} />
+            ))}
+          </div>
+        )}
+        {locaisDisponiveis.length > 1 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <FiltroPill label="Todos os locais" ativo={localFiltro === ""} onClick={() => setLocalFiltro("")} />
+            {locaisDisponiveis.map((l) => (
+              <FiltroPill key={l} label={l} ativo={localFiltro === l} onClick={() => setLocalFiltro(l)} />
+            ))}
+          </div>
+        )}
 
         {gruposDisponiveis.length > 1 && (
           <div className="mb-4 flex flex-wrap gap-2">

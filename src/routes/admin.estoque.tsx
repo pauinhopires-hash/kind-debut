@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Save, AlertTriangle, Package, Loader2, Plus, LayoutList, Combine } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { SkeletonStack } from "@/components/skeleton";
+import { FiltroPill } from "@/components/filtro-pill";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/estoque")({
@@ -37,6 +38,7 @@ function AdminEstoque() {
   const [novoLocal, setNovoLocal] = useState<Record<string, string>>({});
   const [adicionando, setAdicionando] = useState<string | null>(null);
   const [verSomado, setVerSomado] = useState(false);
+  const [localFiltro, setLocalFiltro] = useState("");
 
   useEffect(() => {
     setVerSomado(localStorage.getItem("estoque_ver_somado") === "1");
@@ -46,8 +48,19 @@ function AdminEstoque() {
     setVerSomado((v) => {
       const novo = !v;
       localStorage.setItem("estoque_ver_somado", novo ? "1" : "0");
+      // não faz sentido somar locais enquanto um local específico está filtrado
+      if (novo) setLocalFiltro("");
       return novo;
     });
+  };
+
+  const selecionarLocalFiltro = (local: string) => {
+    setLocalFiltro(local);
+    // escolher um local específico só faz sentido na visão "por local"
+    if (local) {
+      setVerSomado(false);
+      localStorage.setItem("estoque_ver_somado", "0");
+    }
   };
 
   useEffect(() => {
@@ -84,6 +97,17 @@ function AdminEstoque() {
     })));
     setLoading(false);
   };
+
+  const locaisFiltroDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => p.locais.forEach((l) => set.add(l.local)));
+    return Array.from(set).sort();
+  }, [produtos]);
+
+  const produtosExibidos = useMemo(() => {
+    if (!localFiltro) return produtos;
+    return produtos.filter((p) => p.locais.some((l) => l.local === localFiltro));
+  }, [produtos, localFiltro]);
 
   const handleNovaQuantidade = (produtoId: string, local: string, value: string) => {
     setProdutos(prods => prods.map(p => p.id !== produtoId ? p : {
@@ -181,6 +205,16 @@ function AdminEstoque() {
             {verSomado ? "Por local" : "Somar locais"}
           </motion.button>
         </div>
+
+        {locaisFiltroDisponiveis.length > 1 && (
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            <FiltroPill label="Todos os locais" ativo={localFiltro === ""} onClick={() => selecionarLocalFiltro("")} />
+            {locaisFiltroDisponiveis.map((l) => (
+              <FiltroPill key={l} label={l} ativo={localFiltro === l} onClick={() => selecionarLocalFiltro(l)} />
+            ))}
+          </div>
+        )}
+
         {loading ? (
           <SkeletonStack rows={6} />
         ) : produtos.length === 0 ? (
@@ -188,9 +222,15 @@ function AdminEstoque() {
             <Package size={48} className="mx-auto mb-3 opacity-30" />
             <p>Nenhum produto cadastrado</p>
           </motion.div>
+        ) : produtosExibidos.length === 0 ? (
+          <motion.div initial="hidden" animate="visible" variants={fadeIn} className="text-center text-gray-400 py-12">
+            <Package size={48} className="mx-auto mb-3 opacity-30" />
+            <p>Nenhum produto com estoque em {localFiltro}.</p>
+          </motion.div>
         ) : (
           <motion.div initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
-            {produtos.map(p => {
+            {produtosExibidos.map(p => {
+              const linhas = localFiltro ? p.locais.filter(l => l.local === localFiltro) : p.locais;
               const totalProduto = p.locais.reduce((acc, l) => acc + l.quantidade, 0);
               return (
                 <motion.div
@@ -207,11 +247,11 @@ function AdminEstoque() {
                       </p>
                     )}
                   </div>
-                  {verSomado ? null : p.locais.length === 0 ? (
+                  {verSomado ? null : linhas.length === 0 ? (
                     <p className="text-sm text-gray-500">Sem estoque cadastrado ainda.</p>
                   ) : (
                     <div className="space-y-2 mt-2">
-                      {p.locais.map(item => {
+                      {linhas.map(item => {
                         const chave = `${p.id}:${item.local}`;
                         return (
                           <div

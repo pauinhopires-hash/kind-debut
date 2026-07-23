@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { useConfirm } from "@/hooks/use-confirm";
+import { FiltroPill } from "@/components/filtro-pill";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/produtos")({
@@ -46,6 +47,8 @@ function AdminProdutos() {
   const [novo, setNovo] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroPerfil, setFiltroPerfil] = useState("");
+  const [setorFiltro, setSetorFiltro] = useState("");
+  const [localFiltro, setLocalFiltro] = useState("");
   const [form, setForm] = useState({
     nome: "",
     unidade: "UND",
@@ -92,10 +95,24 @@ function AdminProdutos() {
     const q = busca.trim().toLowerCase();
     return produtos.filter((p) => {
       if (filtroPerfil && p.perfil_id !== filtroPerfil) return false;
+      if (setorFiltro && !p.funcoes.includes(setorFiltro)) return false;
+      if (localFiltro && p.local !== localFiltro) return false;
       if (q && !p.nome.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [produtos, busca, filtroPerfil]);
+  }, [produtos, busca, filtroPerfil, setorFiltro, localFiltro]);
+
+  const setoresDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => p.funcoes.forEach((f) => set.add(f)));
+    return Array.from(set).sort();
+  }, [produtos]);
+
+  const locaisDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    produtos.forEach((p) => { if (p.local) set.add(p.local); });
+    return Array.from(set).sort();
+  }, [produtos]);
 
   const abrirNovo = () => {
     setForm({
@@ -268,6 +285,23 @@ function AdminProdutos() {
             <option key={pf.id} value={pf.id}>{pf.nome}</option>
           ))}
         </select>
+
+        {setoresDisponiveis.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            <FiltroPill label="Todos os setores" ativo={setorFiltro === ""} onClick={() => setSetorFiltro("")} />
+            {setoresDisponiveis.map((s) => (
+              <FiltroPill key={s} label={s} ativo={setorFiltro === s} onClick={() => setSetorFiltro(s)} />
+            ))}
+          </div>
+        )}
+        {locaisDisponiveis.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            <FiltroPill label="Todos os locais" ativo={localFiltro === ""} onClick={() => setLocalFiltro("")} />
+            {locaisDisponiveis.map((l) => (
+              <FiltroPill key={l} label={l} ativo={localFiltro === l} onClick={() => setLocalFiltro(l)} />
+            ))}
+          </div>
+        )}
 
         {carregando ? (
           <SkeletonStack rows={6} />
