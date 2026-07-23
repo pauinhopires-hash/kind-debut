@@ -189,8 +189,8 @@ function AdminDashboard() {
           cor: "bg-zinc-600",
         },
         {
-          label: "Setores",
-          descricao: "Departamentos donos dos produtos",
+          label: "Setores e Locais",
+          descricao: "Departamentos e locais físicos de estoque",
           icon: Tags,
           rota: "/admin/setores" as const,
           badge: 0,

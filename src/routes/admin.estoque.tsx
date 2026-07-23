@@ -26,8 +26,6 @@ type ProdutoEstoque = {
   locais: LocalEstoque[];
 };
 
-const TODOS_LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"];
-
 function AdminEstoque() {
   const navigate = useNavigate();
   const { voltar, avancar } = useVoltarAvancar("/admin");
@@ -39,6 +37,7 @@ function AdminEstoque() {
   const [adicionando, setAdicionando] = useState<string | null>(null);
   const [verSomado, setVerSomado] = useState(false);
   const [localFiltro, setLocalFiltro] = useState("");
+  const [locaisCadastrados, setLocaisCadastrados] = useState<string[]>([]);
 
   useEffect(() => {
     setVerSomado(localStorage.getItem("estoque_ver_somado") === "1");
@@ -75,11 +74,13 @@ function AdminEstoque() {
 
   const fetchEstoque = async () => {
     setLoading(true);
-    const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
+    const [{ data: prods, error: errP }, { data: estoques }, { data: lcs }] = await Promise.all([
       supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
       supabase.from("estoque_atual").select("produto_id, local, quantidade"),
+      supabase.from("locais").select("nome").eq("ativo", true).order("nome"),
     ]);
     if (errP) { toast.error("Erro ao carregar produtos"); setLoading(false); return; }
+    setLocaisCadastrados(((lcs ?? []) as { nome: string }[]).map((l) => l.nome));
     const locaisPorProduto: Record<string, LocalEstoque[]> = {};
     (estoques || []).forEach((e: any) => {
       if (!locaisPorProduto[e.produto_id]) locaisPorProduto[e.produto_id] = [];
@@ -289,7 +290,7 @@ function AdminEstoque() {
                   )}
                   {(() => {
                     if (verSomado) return null;
-                    const locaisDisponiveis = TODOS_LOCAIS.filter(
+                    const locaisDisponiveis = locaisCadastrados.filter(
                       (l) => !p.locais.some((pl) => pl.local === l),
                     );
                     if (locaisDisponiveis.length === 0) return null;

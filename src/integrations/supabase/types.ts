@@ -53,6 +53,27 @@ export type Database = {
         }
         Relationships: []
       }
+      locais: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       produto_funcoes: {
         Row: {
           criado_em: string

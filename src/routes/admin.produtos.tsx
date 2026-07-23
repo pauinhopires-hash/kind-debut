@@ -32,7 +32,6 @@ type Perfil = { id: string; nome: string };
 type Funcao = { id: string; nome: string };
 
 const UNIDADES = ["UND", "KG", "CX", "PC", "PCT", "LT"];
-const LOCAIS = ["CONGELADOR", "GELADEIRA", "PRATELEIRA", "ESTOQUE CENTRAL"];
 
 function AdminProdutos() {
   const navigate = useNavigate();
@@ -42,6 +41,7 @@ function AdminProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [perfis, setPerfis] = useState<Perfil[]>([]);
   const [funcoes, setFuncoes] = useState<Funcao[]>([]);
+  const [locaisCadastrados, setLocaisCadastrados] = useState<string[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<Produto | null>(null);
   const [novo, setNovo] = useState(false);
@@ -64,7 +64,7 @@ function AdminProdutos() {
 
   const carregar = async () => {
     setCarregando(true);
-    const [{ data: prods }, { data: pfs }, { data: fcs }, { data: vinculos }] = await Promise.all([
+    const [{ data: prods }, { data: pfs }, { data: fcs }, { data: vinculos }, { data: lcs }] = await Promise.all([
       supabase
         .from("produtos")
         .select("id, nome, unidade, ativo, perfil_id, grupo, subgrupo, local, valor_unitario")
@@ -72,6 +72,7 @@ function AdminProdutos() {
       supabase.from("perfis").select("id, nome").order("nome"),
       supabase.from("funcoes").select("id, nome").eq("ativo", true).order("nome"),
       supabase.from("produto_funcoes").select("produto_id, funcoes(nome)"),
+      supabase.from("locais").select("nome").eq("ativo", true).order("nome"),
     ]);
     const mapaFuncoes: Record<string, string[]> = {};
     ((vinculos ?? []) as any[]).forEach((v) => {
@@ -84,6 +85,7 @@ function AdminProdutos() {
     );
     setPerfis((pfs ?? []) as Perfil[]);
     setFuncoes((fcs ?? []) as Funcao[]);
+    setLocaisCadastrados(((lcs ?? []) as { nome: string }[]).map((l) => l.nome));
     setCarregando(false);
   };
 
@@ -432,7 +434,7 @@ function AdminProdutos() {
                   className={inputCls}
                 >
                   <option value="">—</option>
-                  {LOCAIS.map((l) => <option key={l} value={l}>{l}</option>)}
+                  {locaisCadastrados.map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </Field>
 
