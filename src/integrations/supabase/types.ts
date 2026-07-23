@@ -239,6 +239,8 @@ export type Database = {
         Row: {
           concluido_em: string | null
           criado_em: string
+          decidido_em: string | null
+          decidido_por: string | null
           id: string
           observacao: string | null
           quantidade_planejada: number
@@ -250,6 +252,8 @@ export type Database = {
         Insert: {
           concluido_em?: string | null
           criado_em?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           quantidade_planejada: number
@@ -261,6 +265,8 @@ export type Database = {
         Update: {
           concluido_em?: string | null
           criado_em?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           quantidade_planejada?: number
@@ -403,6 +409,8 @@ export type Database = {
         Row: {
           ativo: boolean
           criado_em: string
+          decidido_em: string | null
+          decidido_por: string | null
           id: string
           produto_id: string
           rendimento: number
@@ -413,6 +421,8 @@ export type Database = {
         Insert: {
           ativo?: boolean
           criado_em?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           produto_id: string
           rendimento: number
@@ -423,6 +433,8 @@ export type Database = {
         Update: {
           ativo?: boolean
           criado_em?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           produto_id?: string
           rendimento?: number
@@ -543,6 +555,8 @@ export type Database = {
       requisicoes: {
         Row: {
           created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
           id: string
           observacao: string | null
           perfil_id: string | null
@@ -551,6 +565,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           perfil_id?: string | null
@@ -559,6 +575,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           perfil_id?: string | null
@@ -585,6 +603,8 @@ export type Database = {
       requisicoes_internas: {
         Row: {
           created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
           id: string
           observacao: string | null
           status: string
@@ -593,6 +613,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           status?: string
@@ -601,6 +623,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           status?: string

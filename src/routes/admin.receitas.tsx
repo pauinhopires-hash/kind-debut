@@ -75,7 +75,11 @@ function AdminReceitas() {
   const mudarStatus = async (r: Receita, status: "aprovada" | "rejeitada") => {
     const label = status === "aprovada" ? "Aprovar" : "Rejeitar";
     if (!confirm(`${label} a ficha técnica de "${r.produtos?.nome}"?`)) return;
-    const { error } = await supabase.from("receitas").update({ status }).eq("id", r.id);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("receitas")
+      .update({ status, decidido_por: user?.id ?? null, decidido_em: new Date().toISOString() })
+      .eq("id", r.id);
     if (error) return toast.error("Erro", { description: error.message });
     toast.success(`Ficha técnica ${status === "aprovada" ? "aprovada" : "rejeitada"}`);
     carregar();

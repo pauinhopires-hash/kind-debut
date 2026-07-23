@@ -101,7 +101,11 @@ function AdminProducao() {
     if (!confirm("Cancelar esta ordem de produção?")) return;
     setProcessando(ordem.id);
     try {
-      const { error } = await supabase.from("ordens_producao").update({ status: "cancelada" }).eq("id", ordem.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("ordens_producao")
+        .update({ status: "cancelada", decidido_por: user?.id ?? null, decidido_em: new Date().toISOString() })
+        .eq("id", ordem.id);
       if (error) throw error;
       toast.success("Ordem cancelada");
       carregar();
@@ -201,9 +205,16 @@ function AdminProducao() {
         );
       if (errFinal) throw errFinal;
 
+      const agora = new Date().toISOString();
       const { error: errOrdem } = await supabase
         .from("ordens_producao")
-        .update({ status: "concluida", quantidade_produzida: produzida, concluido_em: new Date().toISOString() })
+        .update({
+          status: "concluida",
+          quantidade_produzida: produzida,
+          concluido_em: agora,
+          decidido_por: usuarioId,
+          decidido_em: agora,
+        })
         .eq("id", ordem.id);
       if (errOrdem) throw errOrdem;
 

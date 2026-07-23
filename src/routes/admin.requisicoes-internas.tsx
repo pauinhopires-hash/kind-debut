@@ -119,7 +119,7 @@ function AdminRequisicoesInternas() {
       // 4. Atualiza status da requisição
       const { error: errStatus } = await supabase
         .from("requisicoes_internas")
-        .update({ status: "aprovada" })
+        .update({ status: "aprovada", decidido_por: userId, decidido_em: new Date().toISOString() })
         .eq("id", req.id);
       if (errStatus) throw errStatus;
 
@@ -137,7 +137,7 @@ function AdminRequisicoesInternas() {
     try {
       const { error } = await supabase
         .from("requisicoes_internas")
-        .update({ status: "entregue" })
+        .update({ status: "entregue", decidido_por: userId, decidido_em: new Date().toISOString() })
         .eq("id", req.id);
       if (error) throw error;
       toast.success("Entrega confirmada!");
@@ -154,7 +154,7 @@ function AdminRequisicoesInternas() {
     try {
       const { error } = await supabase
         .from("requisicoes_internas")
-        .update({ status: "rejeitada" })
+        .update({ status: "rejeitada", decidido_por: userId, decidido_em: new Date().toISOString() })
         .eq("id", req.id);
       if (error) throw error;
       toast.success("Requisição rejeitada");

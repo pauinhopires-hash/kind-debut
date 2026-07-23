@@ -82,7 +82,11 @@ function AdminRequisicoes() {
   const mudarStatus = async (r: Req, status: "aprovada" | "cancelada") => {
     const label = status === "aprovada" ? "Aprovar" : "Cancelar";
     if (!confirm(`${label} esta requisição?`)) return;
-    const { error } = await supabase.from("requisicoes").update({ status }).eq("id", r.id);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("requisicoes")
+      .update({ status, decidido_por: user?.id ?? null, decidido_em: new Date().toISOString() })
+      .eq("id", r.id);
     if (error) return toast.error("Erro", { description: error.message });
     toast.success(`Requisição ${status}`);
     carregar();
