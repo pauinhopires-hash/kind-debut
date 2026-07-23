@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ShoppingCart, History, LogOut, Package, ClipboardList } from "lucide-react";
+import { ShoppingCart, History, LogOut, Package, ClipboardList, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
@@ -70,6 +70,13 @@ function Index() {
       icon: History,
       rota: "/historico" as const,
       cor: "from-zinc-600 to-zinc-700",
+    },
+    {
+      label: "Propor Ficha Técnica",
+      descricao: "Sugira uma receita pro seu setor",
+      icon: BookOpen,
+      rota: "/solicitar-receita" as const,
+      cor: "from-lime-600 to-lime-700",
     },
   ];
 

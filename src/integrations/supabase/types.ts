@@ -406,7 +406,9 @@ export type Database = {
           id: string
           produto_id: string
           rendimento: number
+          status: string
           unidade_rendimento: string
+          usuario_id: string | null
         }
         Insert: {
           ativo?: boolean
@@ -414,7 +416,9 @@ export type Database = {
           id?: string
           produto_id: string
           rendimento: number
+          status?: string
           unidade_rendimento?: string
+          usuario_id?: string | null
         }
         Update: {
           ativo?: boolean
@@ -422,7 +426,9 @@ export type Database = {
           id?: string
           produto_id?: string
           rendimento?: number
+          status?: string
           unidade_rendimento?: string
+          usuario_id?: string | null
         }
         Relationships: [
           {
@@ -430,6 +436,13 @@ export type Database = {
             columns: ["produto_id"]
             isOneToOne: false
             referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receitas_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]

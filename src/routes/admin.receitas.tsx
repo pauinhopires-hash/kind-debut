@@ -20,16 +20,21 @@ type Receita = {
   rendimento: number;
   unidade_rendimento: string;
   ativo: boolean;
+  status: string;
+  usuario_id: string | null;
+  usuarios: { nome: string } | null;
   produtos: { nome: string; unidade: string } | null;
   totalItens: number;
 };
 
 type ItemForm = { insumo_id: string; quantidade: string; unidade: string };
+type Filtro = "todas" | "pendente" | "aprovada" | "rejeitada";
 
 function AdminReceitas() {
   const { voltar, avancar } = useVoltarAvancar("/admin");
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [receitas, setReceitas] = useState<Receita[]>([]);
+  const [filtro, setFiltro] = useState<Filtro>("todas");
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState<Receita | null>(null);
   const [novo, setNovo] = useState(false);
@@ -44,12 +49,14 @@ function AdminReceitas() {
 
   const carregar = async () => {
     setCarregando(true);
+    let q = supabase
+      .from("receitas")
+      .select("id, produto_id, rendimento, unidade_rendimento, ativo, status, usuario_id, usuarios(nome), produtos(nome, unidade), receita_itens(count)")
+      .order("criado_em", { ascending: false });
+    if (filtro !== "todas") q = q.eq("status", filtro);
     const [{ data: prods }, { data: recs }] = await Promise.all([
       supabase.from("produtos").select("id, nome, unidade").eq("ativo", true).order("nome"),
-      supabase
-        .from("receitas")
-        .select("id, produto_id, rendimento, unidade_rendimento, ativo, produtos(nome, unidade), receita_itens(count)")
-        .order("criado_em", { ascending: false }),
+      q,
     ]);
     setProdutos((prods ?? []) as Produto[]);
     setReceitas(
@@ -63,7 +70,23 @@ function AdminReceitas() {
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [filtro]);
+
+  const mudarStatus = async (r: Receita, status: "aprovada" | "rejeitada") => {
+    const label = status === "aprovada" ? "Aprovar" : "Rejeitar";
+    if (!confirm(`${label} a ficha técnica de "${r.produtos?.nome}"?`)) return;
+    const { error } = await supabase.from("receitas").update({ status }).eq("id", r.id);
+    if (error) return toast.error("Erro", { description: error.message });
+    toast.success(`Ficha técnica ${status === "aprovada" ? "aprovada" : "rejeitada"}`);
+    carregar();
+  };
+
+  const filtros: { id: Filtro; label: string }[] = [
+    { id: "pendente", label: "Pendentes" },
+    { id: "aprovada", label: "Aprovadas" },
+    { id: "rejeitada", label: "Rejeitadas" },
+    { id: "todas", label: "Todas" },
+  ];
 
   const abrirNovo = () => {
     setForm({ produto_id: "", rendimento: "1", unidade_rendimento: "UND", ativo: true });
@@ -209,7 +232,24 @@ function AdminReceitas() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-md md:max-w-2xl space-y-3 px-6 pt-4">
+      <div className="mx-auto max-w-md md:max-w-2xl px-6 pt-4">
+        <div className="mb-3 flex gap-1 overflow-x-auto">
+          {filtros.map((f) => (
+            <motion.button
+              key={f.id}
+              whileTap={tap}
+              onClick={() => setFiltro(f.id)}
+              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
+                filtro === f.id
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </motion.button>
+          ))}
+        </div>
+
         {carregando ? (
           <SkeletonStack rows={6} />
         ) : receitas.length === 0 ? (
@@ -218,19 +258,34 @@ function AdminReceitas() {
           </motion.p>
         ) : (
           <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
-            {receitas.map((r) => (
+            {receitas.map((r) => {
+              const pendente = r.status === "pendente";
+              return (
               <motion.li
                 key={r.id}
                 variants={listItem}
-                className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
+                className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
               >
+                <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-semibold text-foreground">
-                    {r.produtos?.nome ?? "—"}
-                    {!r.ativo && <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativa)</span>}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="break-words text-sm font-semibold text-foreground">
+                      {r.produtos?.nome ?? "—"}
+                      {!r.ativo && <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativa)</span>}
+                    </p>
+                    {r.status !== "aprovada" && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          pendente ? "bg-yellow-900/30 text-yellow-400" : "bg-red-900/30 text-red-400"
+                        }`}
+                      >
+                        {pendente ? "Pendente" : "Rejeitada"}
+                      </span>
+                    )}
+                  </div>
                   <p className="truncate text-xs text-muted-foreground">
                     Rende {r.rendimento} {r.unidade_rendimento} · {r.totalItens} insumo(s)
+                    {r.usuarios?.nome && <> · proposta por {r.usuarios.nome}</>}
                   </p>
                 </div>
                 <div className="flex gap-1">
@@ -253,8 +308,30 @@ function AdminReceitas() {
                     <Trash2 size={14} />
                   </motion.button>
                 </div>
+                </div>
+                {pendente && (
+                  <div className="flex gap-2 border-t border-border pt-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={tap}
+                      onClick={() => mudarStatus(r, "aprovada")}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                    >
+                      <Check size={12} /> Aprovar
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={tap}
+                      onClick={() => mudarStatus(r, "rejeitada")}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                    >
+                      <X size={12} /> Rejeitar
+                    </motion.button>
+                  </div>
+                )}
               </motion.li>
-            ))}
+              );
+            })}
           </motion.ul>
         )}
       </div>

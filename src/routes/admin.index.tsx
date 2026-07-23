@@ -30,6 +30,7 @@ type Stats = {
   requisicoesPendentes: number;
   requisicoesInternas: number;
   produtosBaixoEstoque: number;
+  receitasPendentes: number;
 };
 
 function AdminDashboard() {
@@ -39,6 +40,7 @@ function AdminDashboard() {
     requisicoesPendentes: 0,
     requisicoesInternas: 0,
     produtosBaixoEstoque: 0,
+    receitasPendentes: 0,
   });
 
   useEffect(() => {
@@ -59,7 +61,7 @@ function AdminDashboard() {
   }, []);
 
   const fetchStats = async () => {
-    const [reqCompra, reqInternas, produtosRes, estoqueRes] = await Promise.all([
+    const [reqCompra, reqInternas, produtosRes, estoqueRes, receitasRes] = await Promise.all([
       supabase
         .from("requisicoes")
         .select("id", { count: "exact", head: true })
@@ -70,12 +72,17 @@ function AdminDashboard() {
         .eq("status", "pendente"),
       supabase.from("produtos").select("id, estoque_minimo").eq("ativo", true).gt("estoque_minimo", 0),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
+      supabase
+        .from("receitas")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente"),
     ]);
 
     if (reqCompra.error) console.error("reqCompra", reqCompra.error);
     if (reqInternas.error) console.error("reqInternas", reqInternas.error);
     if (produtosRes.error) console.error("produtos", produtosRes.error);
     if (estoqueRes.error) console.error("estoque", estoqueRes.error);
+    if (receitasRes.error) console.error("receitas", receitasRes.error);
 
     // Soma por produto (um produto pode ter estoque em vários locais).
     const mapEstoque: Record<string, number> = {};
@@ -90,6 +97,7 @@ function AdminDashboard() {
       requisicoesPendentes: reqCompra.count ?? 0,
       requisicoesInternas: reqInternas.count ?? 0,
       produtosBaixoEstoque: baixo,
+      receitasPendentes: receitasRes.count ?? 0,
     });
   };
 
@@ -214,7 +222,7 @@ function AdminDashboard() {
           descricao: "Receitas e insumos",
           icon: BookOpen,
           rota: "/admin/receitas" as const,
-          badge: 0,
+          badge: stats.receitasPendentes,
           cor: "bg-amber-900",
         },
       ],

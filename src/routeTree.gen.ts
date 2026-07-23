@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SolicitarReceitaRouteImport } from './routes/solicitar-receita'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RequisicaoInternaRouteImport } from './routes/requisicao-interna'
 import { Route as PedidoRouteImport } from './routes/pedido'
@@ -36,6 +37,11 @@ import { Route as AdminFornecedoresRouteImport } from './routes/admin.fornecedor
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
 
+const SolicitarReceitaRoute = SolicitarReceitaRouteImport.update({
+  id: '/solicitar-receita',
+  path: '/solicitar-receita',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/pedido': typeof PedidoRouteWithChildren
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/solicitar-receita': typeof SolicitarReceitaRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/pedido': typeof PedidoRouteWithChildren
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/solicitar-receita': typeof SolicitarReceitaRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/pedido': typeof PedidoRouteWithChildren
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/solicitar-receita': typeof SolicitarReceitaRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/pedido'
     | '/requisicao-interna'
     | '/reset-password'
+    | '/solicitar-receita'
     | '/admin/estoque'
     | '/admin/fornecedores'
     | '/admin/importar-estoque'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/pedido'
     | '/requisicao-interna'
     | '/reset-password'
+    | '/solicitar-receita'
     | '/admin/estoque'
     | '/admin/fornecedores'
     | '/admin/importar-estoque'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/pedido'
     | '/requisicao-interna'
     | '/reset-password'
+    | '/solicitar-receita'
     | '/admin/estoque'
     | '/admin/fornecedores'
     | '/admin/importar-estoque'
@@ -349,10 +361,18 @@ export interface RootRouteChildren {
   PedidoRoute: typeof PedidoRouteWithChildren
   RequisicaoInternaRoute: typeof RequisicaoInternaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SolicitarReceitaRoute: typeof SolicitarReceitaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/solicitar-receita': {
+      id: '/solicitar-receita'
+      path: '/solicitar-receita'
+      fullPath: '/solicitar-receita'
+      preLoaderRoute: typeof SolicitarReceitaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -598,6 +618,7 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoRoute: PedidoRouteWithChildren,
   RequisicaoInternaRoute: RequisicaoInternaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SolicitarReceitaRoute: SolicitarReceitaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -47,7 +47,7 @@ function AdminProducao() {
   const carregar = async () => {
     setCarregando(true);
     const [{ data: recs }, { data: ords }] = await Promise.all([
-      supabase.from("receitas").select("id, rendimento, unidade_rendimento, produtos(nome, unidade)").eq("ativo", true).order("criado_em"),
+      supabase.from("receitas").select("id, rendimento, unidade_rendimento, produtos(nome, unidade)").eq("ativo", true).eq("status", "aprovada").order("criado_em"),
       supabase
         .from("ordens_producao")
         .select(
