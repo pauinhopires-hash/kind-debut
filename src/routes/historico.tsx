@@ -83,10 +83,11 @@ function HistoricoPage() {
     }
     setAberto(id);
     if (!itens[id]) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("requisicao_itens")
         .select("id, requisicao_id, quantidade, produto_id, produtos(nome, unidade)")
         .eq("requisicao_id", id);
+      if (error) { toast.error("Erro ao carregar itens", { description: error.message }); return; }
       setItens((prev) => ({ ...prev, [id]: (data ?? []) as unknown as Item[] }));
     }
   };

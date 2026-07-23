@@ -66,7 +66,8 @@ function AdminRequisicoesInternas() {
       .select(`id, status, observacao, created_at, usuario_id,
         usuarios(nome),
         requisicao_interna_itens(id, produto_id, quantidade, produtos(nome, unidade))`)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
     if (error) { toast.error("Erro ao carregar requisições"); setLoading(false); return; }
     setRequisicoes((data || []) as any);
     setLoading(false);

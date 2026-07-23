@@ -57,7 +57,7 @@ function RequisicaoInterna() {
 
   const fetchProdutos = async () => {
     setCarregandoProdutos(true);
-    const [{ data: prods, error: errP }, { data: estoques }] = await Promise.all([
+    const [{ data: prods, error: errP }, { data: estoques, error: errE }] = await Promise.all([
       supabase
         .from("produtos")
         .select("id, nome, unidade, local, produto_funcoes(funcoes(id, nome))")
@@ -66,6 +66,7 @@ function RequisicaoInterna() {
       supabase.from("estoque_atual").select("produto_id, quantidade"),
     ]);
     if (errP) { toast.error("Erro ao carregar produtos"); setCarregandoProdutos(false); return; }
+    if (errE) toast.error("Erro ao carregar estoque disponível", { description: errE.message });
     // Soma por produto (um produto pode ter estoque em vários locais).
     const estoqueMap: Record<string, number> = {};
     (estoques || []).forEach((e: any) => { estoqueMap[e.produto_id] = (estoqueMap[e.produto_id] ?? 0) + Number(e.quantidade); });

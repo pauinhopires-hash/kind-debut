@@ -70,10 +70,11 @@ function AdminRequisicoes() {
     if (aberto === id) return setAberto(null);
     setAberto(id);
     if (!itens[id]) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("requisicao_itens")
         .select("id, quantidade, unidade, nome_custom, produtos(nome, unidade)")
         .eq("requisicao_id", id);
+      if (error) { toast.error("Erro ao carregar itens", { description: error.message }); return; }
       setItens((prev) => ({ ...prev, [id]: (data ?? []) as unknown as Item[] }));
     }
   };
@@ -88,10 +89,11 @@ function AdminRequisicoes() {
   };
 
   const recarregarItens = async (reqId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("requisicao_itens")
       .select("id, quantidade, unidade, nome_custom, produtos(nome, unidade)")
       .eq("requisicao_id", reqId);
+    if (error) { toast.error("Erro ao recarregar itens", { description: error.message }); return; }
     setItens((prev) => ({ ...prev, [reqId]: (data ?? []) as unknown as Item[] }));
   };
 
