@@ -70,7 +70,7 @@ function AdminListaCompras() {
           comprado_em,
           produto_id,
           produtos (id, nome, unidade, grupo),
-          requisicoes!inner (id, numero, status, created_at, usuarios (nome))
+          requisicoes!inner (id, numero, status, created_at, usuarios!requisicoes_usuario_id_fkey (nome))
         `,
         )
         .in("requisicoes.status", ["pendente", "aprovada"])
