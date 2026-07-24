@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SugerirProdutoRouteImport } from './routes/sugerir-produto'
 import { Route as SolicitarReceitaRouteImport } from './routes/solicitar-receita'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RequisicaoInternaRouteImport } from './routes/requisicao-interna'
@@ -37,6 +38,11 @@ import { Route as AdminFornecedoresRouteImport } from './routes/admin.fornecedor
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
 
+const SugerirProdutoRoute = SugerirProdutoRouteImport.update({
+  id: '/sugerir-produto',
+  path: '/sugerir-produto',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SolicitarReceitaRoute = SolicitarReceitaRouteImport.update({
   id: '/solicitar-receita',
   path: '/solicitar-receita',
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/solicitar-receita': typeof SolicitarReceitaRoute
+  '/sugerir-produto': typeof SugerirProdutoRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/solicitar-receita': typeof SolicitarReceitaRoute
+  '/sugerir-produto': typeof SugerirProdutoRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/requisicao-interna': typeof RequisicaoInternaRoute
   '/reset-password': typeof ResetPasswordRoute
   '/solicitar-receita': typeof SolicitarReceitaRoute
+  '/sugerir-produto': typeof SugerirProdutoRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/requisicao-interna'
     | '/reset-password'
     | '/solicitar-receita'
+    | '/sugerir-produto'
     | '/admin/estoque'
     | '/admin/fornecedores'
     | '/admin/importar-estoque'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/requisicao-interna'
     | '/reset-password'
     | '/solicitar-receita'
+    | '/sugerir-produto'
     | '/admin/estoque'
     | '/admin/fornecedores'
     | '/admin/importar-estoque'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/requisicao-interna'
     | '/reset-password'
     | '/solicitar-receita'
+    | '/sugerir-produto'
     | '/admin/estoque'
     | '/admin/fornecedores'
     | '/admin/importar-estoque'
@@ -362,10 +374,18 @@ export interface RootRouteChildren {
   RequisicaoInternaRoute: typeof RequisicaoInternaRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SolicitarReceitaRoute: typeof SolicitarReceitaRoute
+  SugerirProdutoRoute: typeof SugerirProdutoRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sugerir-produto': {
+      id: '/sugerir-produto'
+      path: '/sugerir-produto'
+      fullPath: '/sugerir-produto'
+      preLoaderRoute: typeof SugerirProdutoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/solicitar-receita': {
       id: '/solicitar-receita'
       path: '/solicitar-receita'
@@ -619,6 +639,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequisicaoInternaRoute: RequisicaoInternaRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SolicitarReceitaRoute: SolicitarReceitaRoute,
+  SugerirProdutoRoute: SugerirProdutoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

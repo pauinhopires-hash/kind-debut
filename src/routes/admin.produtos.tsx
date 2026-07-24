@@ -9,6 +9,7 @@ import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { useConfirm } from "@/hooks/use-confirm";
 import { FiltroPill } from "@/components/filtro-pill";
+import { notificar } from "@/lib/notificar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/produtos")({
@@ -25,11 +26,16 @@ type Produto = {
   subgrupo: string | null;
   local: string | null;
   valor_unitario: number | null;
+  status: string;
+  usuario_id: string | null;
+  observacao: string | null;
+  usuarios: { nome: string } | null;
   funcoes: string[];
 };
 
 type Perfil = { id: string; nome: string };
 type Funcao = { id: string; nome: string };
+type Filtro = "todos" | "pendente" | "aprovado" | "rejeitado";
 
 const UNIDADES = ["UND", "KG", "CX", "PC", "PCT", "LT"];
 
@@ -49,6 +55,7 @@ function AdminProdutos() {
   const [filtroPerfil, setFiltroPerfil] = useState("");
   const [setorFiltro, setSetorFiltro] = useState("");
   const [localFiltro, setLocalFiltro] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<Filtro>("todos");
   const [form, setForm] = useState({
     nome: "",
     unidade: "UND",
@@ -64,11 +71,13 @@ function AdminProdutos() {
 
   const carregar = async () => {
     setCarregando(true);
+    let q = supabase
+      .from("produtos")
+      .select("id, nome, unidade, ativo, perfil_id, grupo, subgrupo, local, valor_unitario, status, usuario_id, observacao, usuarios!produtos_usuario_id_fkey(nome)")
+      .order("nome");
+    if (filtroStatus !== "todos") q = q.eq("status", filtroStatus);
     const [{ data: prods }, { data: pfs }, { data: fcs }, { data: vinculos }, { data: lcs }] = await Promise.all([
-      supabase
-        .from("produtos")
-        .select("id, nome, unidade, ativo, perfil_id, grupo, subgrupo, local, valor_unitario")
-        .order("nome"),
+      q,
       supabase.from("perfis").select("id, nome").order("nome"),
       supabase.from("funcoes").select("id, nome").eq("ativo", true).order("nome"),
       supabase.from("produto_funcoes").select("produto_id, funcoes(nome)"),
@@ -91,7 +100,7 @@ function AdminProdutos() {
 
   useEffect(() => {
     carregar();
-  }, []);
+  }, [filtroStatus]);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -222,6 +231,39 @@ function AdminProdutos() {
     carregar();
   };
 
+  const mudarStatus = async (p: Produto, status: "aprovado" | "rejeitado") => {
+    const label = status === "aprovado" ? "Aprovar" : "Rejeitar";
+    if (!(await confirm({ message: `${label} a sugestão "${p.nome}"?`, confirmLabel: label, destructive: status === "rejeitado" }))) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("produtos")
+      .update({
+        status,
+        ativo: status === "aprovado",
+        decidido_por: user?.id ?? null,
+        decidido_em: new Date().toISOString(),
+      })
+      .eq("id", p.id);
+    if (error) return toast.error("Erro", { description: error.message });
+    toast.success(`Sugestão ${status === "aprovado" ? "aprovada" : "rejeitada"}`);
+    if (p.usuario_id) {
+      notificar(
+        p.usuario_id,
+        status === "aprovado" ? "Produto aprovado" : "Produto rejeitado",
+        `Sua sugestão de "${p.nome}" foi ${status === "aprovado" ? "aprovada" : "rejeitada"}.`,
+        "/sugerir-produto",
+      );
+    }
+    carregar();
+  };
+
+  const filtros: { id: Filtro; label: string }[] = [
+    { id: "pendente", label: "Pendentes" },
+    { id: "aprovado", label: "Aprovados" },
+    { id: "rejeitado", label: "Rejeitados" },
+    { id: "todos", label: "Todos" },
+  ];
+
   return (
     <main className="min-h-screen bg-background pb-12">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-6 py-4 backdrop-blur">
@@ -268,6 +310,23 @@ function AdminProdutos() {
       </header>
 
       <div className="mx-auto max-w-md md:max-w-2xl space-y-3 px-6 pt-4">
+        <div className="flex gap-1 overflow-x-auto">
+          {filtros.map((f) => (
+            <motion.button
+              key={f.id}
+              whileTap={tap}
+              onClick={() => setFiltroStatus(f.id)}
+              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
+                filtroStatus === f.id
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </motion.button>
+          ))}
+        </div>
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
           <input
@@ -313,19 +372,33 @@ function AdminProdutos() {
           </motion.p>
         ) : (
           <motion.ul initial="hidden" animate="visible" variants={staggerList()} className="space-y-2">
-            {filtrados.map((p) => (
+            {filtrados.map((p) => {
+              const pendente = p.status === "pendente";
+              return (
               <motion.li
                 key={p.id}
                 variants={listItem}
-                className="flex items-start justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
+                className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-3 transition-shadow hover:shadow-md hover:shadow-primary/5"
               >
+                <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-semibold text-foreground">
-                    {p.nome}
-                    {!p.ativo && (
-                      <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="break-words text-sm font-semibold text-foreground">
+                      {p.nome}
+                      {!p.ativo && !pendente && (
+                        <span className="ml-2 text-xs font-normal uppercase text-muted-foreground">(inativo)</span>
+                      )}
+                    </p>
+                    {p.status !== "aprovado" && (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          pendente ? "bg-yellow-900/30 text-yellow-400" : "bg-red-900/30 text-red-400"
+                        }`}
+                      >
+                        {pendente ? "Pendente" : "Rejeitado"}
+                      </span>
                     )}
-                  </p>
+                  </div>
                   <p className="truncate text-xs text-muted-foreground">
                     {p.unidade}
                     {p.grupo && ` · ${p.grupo}${p.subgrupo ? "/" + p.subgrupo : ""}`}
@@ -333,7 +406,11 @@ function AdminProdutos() {
                   <p className="truncate text-[10px] uppercase text-muted-foreground">
                     {[p.funcoes.join(", "), p.local, perfis.find((pf) => pf.id === p.perfil_id)?.nome].filter(Boolean).join(" · ")}
                     {p.valor_unitario != null && ` · R$ ${p.valor_unitario.toFixed(2)}`}
+                    {p.usuarios?.nome && <> · sugerido por {p.usuarios.nome}</>}
                   </p>
+                  {p.observacao && (
+                    <p className="mt-1 break-words text-xs italic text-muted-foreground">"{p.observacao}"</p>
+                  )}
                 </div>
                 <div className="flex gap-1">
                   <motion.button
@@ -355,8 +432,30 @@ function AdminProdutos() {
                     <Trash2 size={14} />
                   </motion.button>
                 </div>
+                </div>
+                {pendente && (
+                  <div className="flex gap-2 border-t border-border pt-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={tap}
+                      onClick={() => mudarStatus(p, "aprovado")}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
+                    >
+                      <Check size={12} /> Aprovar
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={tap}
+                      onClick={() => mudarStatus(p, "rejeitado")}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-destructive/40 bg-background px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40"
+                    >
+                      <X size={12} /> Rejeitar
+                    </motion.button>
+                  </div>
+                )}
               </motion.li>
-            ))}
+              );
+            })}
           </motion.ul>
         )}
       </div>

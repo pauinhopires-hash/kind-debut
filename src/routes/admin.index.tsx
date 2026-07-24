@@ -31,6 +31,7 @@ type Stats = {
   requisicoesInternas: number;
   produtosBaixoEstoque: number;
   receitasPendentes: number;
+  produtosPendentes: number;
 };
 
 function AdminDashboard() {
@@ -41,6 +42,7 @@ function AdminDashboard() {
     requisicoesInternas: 0,
     produtosBaixoEstoque: 0,
     receitasPendentes: 0,
+    produtosPendentes: 0,
   });
 
   useEffect(() => {
@@ -61,7 +63,7 @@ function AdminDashboard() {
   }, []);
 
   const fetchStats = async () => {
-    const [reqCompra, reqInternas, produtosRes, estoqueRes, receitasRes] = await Promise.all([
+    const [reqCompra, reqInternas, produtosRes, estoqueRes, receitasRes, produtosPendentesRes] = await Promise.all([
       supabase
         .from("requisicoes")
         .select("id", { count: "exact", head: true })
@@ -76,6 +78,10 @@ function AdminDashboard() {
         .from("receitas")
         .select("id", { count: "exact", head: true })
         .eq("status", "pendente"),
+      supabase
+        .from("produtos")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente"),
     ]);
 
     if (reqCompra.error) console.error("reqCompra", reqCompra.error);
@@ -83,6 +89,7 @@ function AdminDashboard() {
     if (produtosRes.error) console.error("produtos", produtosRes.error);
     if (estoqueRes.error) console.error("estoque", estoqueRes.error);
     if (receitasRes.error) console.error("receitas", receitasRes.error);
+    if (produtosPendentesRes.error) console.error("produtosPendentes", produtosPendentesRes.error);
 
     // Soma por produto (um produto pode ter estoque em vários locais).
     const mapEstoque: Record<string, number> = {};
@@ -98,6 +105,7 @@ function AdminDashboard() {
       requisicoesInternas: reqInternas.count ?? 0,
       produtosBaixoEstoque: baixo,
       receitasPendentes: receitasRes.count ?? 0,
+      produtosPendentes: produtosPendentesRes.count ?? 0,
     });
   };
 
@@ -185,7 +193,7 @@ function AdminDashboard() {
           descricao: "Cadastro de produtos",
           icon: FileText,
           rota: "/admin/produtos" as const,
-          badge: 0,
+          badge: stats.produtosPendentes,
           cor: "bg-zinc-600",
         },
         {

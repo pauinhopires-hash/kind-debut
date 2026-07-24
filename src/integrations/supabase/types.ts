@@ -390,43 +390,58 @@ export type Database = {
         Row: {
           ativo: boolean | null
           criado_em: string | null
+          decidido_em: string | null
+          decidido_por: string | null
           estoque_minimo: number
           grupo: string | null
           id: string
           local: string | null
           nome: string
+          observacao: string | null
           perfil_id: string | null
           setor: string | null
+          status: string
           subgrupo: string | null
           unidade: string
+          usuario_id: string | null
           valor_unitario: number | null
         }
         Insert: {
           ativo?: boolean | null
           criado_em?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
           estoque_minimo?: number
           grupo?: string | null
           id?: string
           local?: string | null
           nome: string
+          observacao?: string | null
           perfil_id?: string | null
           setor?: string | null
+          status?: string
           subgrupo?: string | null
           unidade: string
+          usuario_id?: string | null
           valor_unitario?: number | null
         }
         Update: {
           ativo?: boolean | null
           criado_em?: string | null
+          decidido_em?: string | null
+          decidido_por?: string | null
           estoque_minimo?: number
           grupo?: string | null
           id?: string
           local?: string | null
           nome?: string
+          observacao?: string | null
           perfil_id?: string | null
           setor?: string | null
+          status?: string
           subgrupo?: string | null
           unidade?: string
+          usuario_id?: string | null
           valor_unitario?: number | null
         }
         Relationships: [
@@ -435,6 +450,20 @@ export type Database = {
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_decidido_por_fkey"
+            columns: ["decidido_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]
