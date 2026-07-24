@@ -38,8 +38,9 @@ type RequisicaoPronta = {
   numero: number;
   usuario: string;
   data: string;
-  totalItens: number;
+  totalItens: number; // total original da requisição (inclui descartados)
   compradoItens: number;
+  excluidoItens: number;
 };
 
 function AdminListaCompras() {
@@ -138,10 +139,12 @@ function AdminListaCompras() {
       });
 
       // "Prontas para receber": todas as requisições aprovadas onde todo item
-      // não-excluído já foi comprado — não importa de qual dia.
+      // já foi comprado ou descartado (nenhum ficou pra trás sem decisão) —
+      // não importa de qual dia. totalItens é o total original (com descartados),
+      // pra mostrar "4 comprados + 2 descartados de 6" em vez de esconder que
+      // parte do pedido original nunca foi atendida.
       const mapRequisicao: Record<string, RequisicaoPronta> = {};
       for (const item of itensTodos ?? []) {
-        if (item.excluido) continue;
         const req = item.requisicoes as unknown as {
           id: string;
           numero: number;
@@ -157,14 +160,16 @@ function AdminListaCompras() {
             data: req.created_at,
             totalItens: 0,
             compradoItens: 0,
+            excluidoItens: 0,
           };
         }
         mapRequisicao[req.id].totalItens += 1;
-        if (item.comprado) mapRequisicao[req.id].compradoItens += 1;
+        if (item.excluido) mapRequisicao[req.id].excluidoItens += 1;
+        else if (item.comprado) mapRequisicao[req.id].compradoItens += 1;
       }
       setRequisicoesProntas(
         Object.values(mapRequisicao)
-          .filter((r) => r.totalItens > 0 && r.compradoItens === r.totalItens)
+          .filter((r) => r.totalItens > 0 && r.compradoItens + r.excluidoItens === r.totalItens)
           .sort((a, b) => a.numero - b.numero),
       );
 
@@ -522,7 +527,9 @@ function AdminListaCompras() {
                     Requisição #{r.numero} — {r.usuario}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {format(new Date(r.data), "dd/MM", { locale: ptBR })} · {r.compradoItens}/{r.totalItens} itens comprados
+                    {format(new Date(r.data), "dd/MM", { locale: ptBR })} · {r.compradoItens} comprado{r.compradoItens !== 1 ? "s" : ""}
+                    {r.excluidoItens > 0 && ` + ${r.excluidoItens} descartado${r.excluidoItens !== 1 ? "s" : ""}`}
+                    {" "}de {r.totalItens}
                   </p>
                 </div>
                 <motion.button
