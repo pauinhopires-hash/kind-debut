@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { useConfirm } from "@/hooks/use-confirm";
+import { notificar } from "@/lib/notificar";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/requisicoes")({
@@ -91,6 +92,12 @@ function AdminRequisicoes() {
       .eq("id", r.id);
     if (error) return toast.error("Erro", { description: error.message });
     toast.success(`Requisição ${status}`);
+    notificar(
+      r.usuario_id,
+      status === "aprovada" ? "Requisição de compra aprovada" : "Requisição de compra cancelada",
+      status === "aprovada" ? "Sua requisição foi aprovada e vai pra lista de compras." : "Sua requisição foi cancelada.",
+      "/historico",
+    );
     carregar();
   };
 

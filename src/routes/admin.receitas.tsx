@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
 import { useConfirm } from "@/hooks/use-confirm";
+import { notificar } from "@/lib/notificar";
 import { fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/receitas")({
@@ -84,6 +85,14 @@ function AdminReceitas() {
       .eq("id", r.id);
     if (error) return toast.error("Erro", { description: error.message });
     toast.success(`Ficha técnica ${status === "aprovada" ? "aprovada" : "rejeitada"}`);
+    if (r.usuario_id) {
+      notificar(
+        r.usuario_id,
+        status === "aprovada" ? "Ficha técnica aprovada" : "Ficha técnica rejeitada",
+        `Sua proposta de "${r.produtos?.nome}" foi ${status === "aprovada" ? "aprovada" : "rejeitada"}.`,
+        "/solicitar-receita",
+      );
+    }
     carregar();
   };
 

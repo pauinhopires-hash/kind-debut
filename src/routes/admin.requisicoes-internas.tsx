@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SkeletonStack } from "@/components/skeleton";
 import { useVoltarAvancar } from "@/hooks/use-voltar-avancar";
+import { notificar } from "@/lib/notificar";
 import { collapseY, fadeIn, listItem, staggerList, tap } from "@/lib/motion";
 
 export const Route = createFileRoute("/admin/requisicoes-internas")({
@@ -124,6 +125,7 @@ function AdminRequisicoesInternas() {
       if (errStatus) throw errStatus;
 
       toast.success("Requisição aprovada!");
+      notificar(req.usuario_id, "Requisição de estoque aprovada", "Sua retirada de insumos foi aprovada.", "/historico-interno");
       fetchRequisicoes();
     } catch (e: any) {
       toast.error("Erro: " + e.message);
@@ -141,6 +143,7 @@ function AdminRequisicoesInternas() {
         .eq("id", req.id);
       if (error) throw error;
       toast.success("Entrega confirmada!");
+      notificar(req.usuario_id, "Entrega de estoque confirmada", "Sua retirada de insumos foi entregue.", "/historico-interno");
       fetchRequisicoes();
     } catch (e: any) {
       toast.error("Erro: " + e.message);
@@ -158,6 +161,7 @@ function AdminRequisicoesInternas() {
         .eq("id", req.id);
       if (error) throw error;
       toast.success("Requisição rejeitada");
+      notificar(req.usuario_id, "Requisição de estoque rejeitada", "Sua retirada de insumos foi rejeitada.", "/historico-interno");
       fetchRequisicoes();
     } catch (e: any) {
       toast.error("Erro: " + e.message);
