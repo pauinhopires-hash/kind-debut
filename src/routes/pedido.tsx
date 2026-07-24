@@ -86,7 +86,7 @@ function PedidoPage() {
       setPerfis((pfs ?? []) as Perfil[]);
       // Soma por produto (um produto pode ter estoque em vários locais).
       const map: Record<string, number> = {};
-      (est ?? []).forEach((r: { produto_id: string; quantidade: number }) => {
+      (est ?? []).forEach((r: { produto_id: string; quantidade: number | null }) => {
         map[r.produto_id] = (map[r.produto_id] ?? 0) + Number(r.quantidade);
       });
       setEstoque(map);
@@ -126,6 +126,7 @@ function PedidoPage() {
     }
     const map: Record<string, number> = {};
     itens.forEach((i) => {
+      if (!i.produto_id) return;
       map[i.produto_id] = Number(i.quantidade);
     });
     setQuantidades(map);
@@ -216,6 +217,10 @@ function PedidoPage() {
         const primeiro = produtos.find((p) => p.id === itensSelecionados[0][0]);
         perfilDaReq = primeiro?.perfil_id ?? null;
       }
+    }
+    if (!perfilDaReq) {
+      toast.error("Não foi possível determinar o setor deste pedido. Confirme se seu perfil está configurado (fale com um admin).");
+      return;
     }
 
     setSalvando(true);

@@ -82,7 +82,7 @@ function ExportarPage() {
       const lista = (itens ?? []) as unknown as ItemExport[];
       const linhas = [
         `*Misturaria Fina Mezcla*`,
-        `Requisição — ${formatarDataHora(req.created_at)}`,
+        `Requisição — ${formatarDataHora(req.created_at ?? new Date().toISOString())}`,
         perfil ? `Perfil: ${perfil.nome}` : null,
         usuario ? `Solicitante: ${usuario.nome}` : null,
         ``,
@@ -96,7 +96,7 @@ function ExportarPage() {
         .join("\n");
 
       csvRef.current = {
-        nome: `pedido-${new Date(req.created_at).toISOString().slice(0, 10)}`,
+        nome: `pedido-${new Date(req.created_at ?? Date.now()).toISOString().slice(0, 10)}`,
         rows: lista.map((it) => [it.produtos?.nome ?? "Produto", it.quantidade, it.produtos?.unidade ?? ""]),
       };
 

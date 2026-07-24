@@ -321,7 +321,7 @@ function AdminImportarEstoque() {
         p_rows: payload,
         p_usuario_id: session.user.id,
         p_zerar_produto_ids: modo === "completa" ? ausentes.filter((a) => a.incluir).map((a) => a.produto_id) : [],
-        p_zerar_local: modo === "completa" ? localReconciliacao : null,
+        p_zerar_local: modo === "completa" ? localReconciliacao : undefined,
       });
       if (error) throw error;
 

@@ -56,7 +56,8 @@ function EditarPedido() {
       setObservacao(req.observacao ?? "");
       const map: Record<string, number> = {};
       const uMap: Record<string, string> = {};
-      (itens ?? []).forEach((i: { produto_id: string; quantidade: number; unidade: string | null }) => {
+      (itens ?? []).forEach((i: { produto_id: string | null; quantidade: number; unidade: string | null }) => {
+        if (!i.produto_id) return;
         map[i.produto_id] = Number(i.quantidade);
         if (i.unidade) uMap[i.produto_id] = i.unidade;
       });

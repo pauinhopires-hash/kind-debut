@@ -156,8 +156,10 @@ function AdminUsuarios() {
       if (error) return toast.error("Erro", { description: error.message });
       toast.success("Admin removido");
     } else {
+      // user_roles é uma view (ponte read-only pro perfil real) — não é insertable de verdade,
+      // por isso o cast; o erro do Supabase, se houver, é mostrado normalmente abaixo.
       const { error } = await supabase.from("user_roles")
-        .insert({ user_id: u.id, role: "admin" });
+        .insert({ user_id: u.id, role: "admin" } as any);
       if (error) return toast.error("Erro", { description: error.message });
       toast.success("Promovido a admin");
     }

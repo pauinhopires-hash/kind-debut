@@ -27,7 +27,7 @@ export const inviteUser = createServerFn({ method: "POST" })
       if (rolesErr) {
         return { success: false as const, error: `Falha ao verificar permissões: ${rolesErr.message}` };
       }
-      const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
+      const isAdmin = (roles ?? []).some((r: { role: string | null }) => r.role === "admin");
       if (!isAdmin) {
         return { success: false as const, error: "Apenas administradores podem convidar usuários" };
       }
@@ -75,7 +75,7 @@ export const deleteUser = createServerFn({ method: "POST" })
       if (rolesErr) {
         return { success: false as const, error: `Falha ao verificar permissões: ${rolesErr.message}` };
       }
-      const isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
+      const isAdmin = (roles ?? []).some((r: { role: string | null }) => r.role === "admin");
       if (!isAdmin) {
         return { success: false as const, error: "Apenas administradores podem excluir usuários" };
       }
