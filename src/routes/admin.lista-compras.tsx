@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, CheckCheck, AlertTriangle, Loader2, PackageCheck, MessageCircle, ChevronDown, ChevronUp, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -21,11 +21,12 @@ type ItemLista = {
   nome: string;
   unidade: string;
   grupo: string;
-  pedido: number; // soma das requisições
+  pedido: number; // soma das requisições (não conta itens excluídos)
   estoque: number; // estoque atual
   aComprar: number; // admin pode ajustar
   comprado: boolean;
   comprado_em: string | null;
+  excluido: boolean; // descartado — não entra na conta de pedido/pendência
   item_ids: string[]; // ids dos requisicao_itens relacionados
   fornecedores: { id: string; nome_empresa: string; whatsapp: string }[];
 };
@@ -36,6 +37,7 @@ type RequisicaoPronta = {
   id: string;
   numero: number;
   usuario: string;
+  data: string;
   totalItens: number;
   compradoItens: number;
 };
@@ -68,6 +70,7 @@ function AdminListaCompras() {
           quantidade,
           comprado,
           comprado_em,
+          excluido,
           produto_id,
           produtos (id, nome, unidade, grupo),
           requisicoes!inner (id, numero, status, created_at, usuarios!requisicoes_usuario_id_fkey (nome))
@@ -77,7 +80,22 @@ function AdminListaCompras() {
         .gte("requisicoes.created_at", `${data}T00:00:00`)
         .lte("requisicoes.created_at", `${data}T23:59:59`);
 
+      // Busca separada, sem filtro de data — "Prontas para receber" não pode
+      // depender de qual dia está selecionado no calendário, senão uma
+      // requisição de um dia anterior fica esquecida se ninguém voltar lá.
+      const queryTodasPendentes = supabase
+        .from("requisicao_itens")
+        .select(
+          `
+          comprado,
+          excluido,
+          requisicoes!inner (id, numero, status, created_at, usuarios!requisicoes_usuario_id_fkey (nome))
+        `,
+        )
+        .eq("requisicoes.status", "aprovada");
+
       const { data: itens, error: e1 } = await query;
+      const { data: itensTodos, error: e0 } = await queryTodasPendentes;
       const { data: estoqueRows, error: e2 } = await supabase.from("estoque_atual").select("produto_id, quantidade");
       const { data: fornecedorRows, error: e3 } = await supabase
         .from("produto_fornecedores")
@@ -89,8 +107,8 @@ function AdminListaCompras() {
         .eq("ativo", true)
         .order("nome");
 
-      if (e1 || e2 || e3 || e4 || e5) {
-        toast.error("Erro ao carregar", { description: (e1 ?? e2 ?? e3 ?? e4 ?? e5)?.message });
+      if (e0 || e1 || e2 || e3 || e4 || e5) {
+        toast.error("Erro ao carregar", { description: (e0 ?? e1 ?? e2 ?? e3 ?? e4 ?? e5)?.message });
         setCarregando(false);
         return;
       }
@@ -119,14 +137,15 @@ function AdminListaCompras() {
         });
       });
 
-      // Agrupa por requisição (independente do filtro de setor) para saber
-      // quais requisições aprovadas já têm todos os itens comprados.
-      const mapRequisicao: Record<string, RequisicaoPronta & { status: string }> = {};
-      for (const item of itens ?? []) {
+      // "Prontas para receber": todas as requisições aprovadas onde todo item
+      // não-excluído já foi comprado — não importa de qual dia.
+      const mapRequisicao: Record<string, RequisicaoPronta> = {};
+      for (const item of itensTodos ?? []) {
+        if (item.excluido) continue;
         const req = item.requisicoes as unknown as {
           id: string;
           numero: number;
-          status: string;
+          created_at: string;
           usuarios: { nome: string } | null;
         } | null;
         if (!req) continue;
@@ -135,7 +154,7 @@ function AdminListaCompras() {
             id: req.id,
             numero: req.numero,
             usuario: req.usuarios?.nome ?? "Usuário desconhecido",
-            status: req.status,
+            data: req.created_at,
             totalItens: 0,
             compradoItens: 0,
           };
@@ -145,8 +164,7 @@ function AdminListaCompras() {
       }
       setRequisicoesProntas(
         Object.values(mapRequisicao)
-          .filter((r) => r.status === "aprovada" && r.totalItens > 0 && r.compradoItens === r.totalItens)
-          .map(({ status, ...r }) => r)
+          .filter((r) => r.totalItens > 0 && r.compradoItens === r.totalItens)
           .sort((a, b) => a.numero - b.numero),
       );
 
@@ -175,12 +193,17 @@ function AdminListaCompras() {
             aComprar: 0,
             comprado: false,
             comprado_em: null,
+            excluido: false,
             item_ids: [],
             fornecedores: mapFornecedores[pid] ?? [],
           };
         }
-        mapProduto[pid].pedido += Number(item.quantidade);
         mapProduto[pid].item_ids.push(item.id);
+        if (item.excluido) {
+          mapProduto[pid].excluido = true;
+          continue; // não conta pra quantidade pedida/pendência
+        }
+        mapProduto[pid].pedido += Number(item.quantidade);
         if (item.comprado) {
           mapProduto[pid].comprado = true;
           mapProduto[pid].comprado_em = item.comprado_em;
@@ -283,6 +306,32 @@ function AdminListaCompras() {
       }
 
       toast.success(novoComprado ? `${it.nome} marcado como comprado` : `${it.nome} desmarcado`);
+      await carregar();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Erro ao salvar", { description: msg });
+    } finally {
+      setSalvando(null);
+    }
+  };
+
+  const marcarExcluido = async (it: ItemLista) => {
+    const novoExcluido = !it.excluido;
+    if (novoExcluido) {
+      if (!(await confirm({
+        message: `Descartar "${it.nome}"? Ele sai da conta de pedido/pendência (não mexe no estoque já registrado).`,
+        confirmLabel: "Descartar",
+        destructive: true,
+      }))) return;
+    }
+    setSalvando(it.produto_id);
+    try {
+      const { error } = await supabase
+        .from("requisicao_itens")
+        .update({ excluido: novoExcluido, excluido_em: novoExcluido ? new Date().toISOString() : null })
+        .in("id", it.item_ids);
+      if (error) throw error;
+      toast.success(novoExcluido ? `${it.nome} descartado` : `${it.nome} restaurado`);
       await carregar();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -473,7 +522,7 @@ function AdminListaCompras() {
                     Requisição #{r.numero} — {r.usuario}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {r.compradoItens}/{r.totalItens} itens comprados
+                    {format(new Date(r.data), "dd/MM", { locale: ptBR })} · {r.compradoItens}/{r.totalItens} itens comprados
                   </p>
                 </div>
                 <motion.button
@@ -560,7 +609,7 @@ function AdminListaCompras() {
         ) : (
           <>
             {/* Cabeçalho da tabela */}
-            <div className="grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 text-xs text-gray-500 mb-1 px-1">
+            <div className="grid grid-cols-[1fr_60px_70px_80px_68px] gap-1 text-xs text-gray-500 mb-1 px-1">
               <span>Produto</span>
               <span className="text-center">Pedido</span>
               <span className="text-center">Estoque</span>
@@ -581,15 +630,16 @@ function AdminListaCompras() {
                         key={it.produto_id}
                         variants={listItem}
                         className={`overflow-hidden rounded transition-shadow hover:shadow-md hover:shadow-primary/5 ${
-                          it.comprado ? "bg-green-950/30 opacity-70" : "bg-zinc-900"
+                          it.excluido ? "bg-zinc-900/40 opacity-50" : it.comprado ? "bg-green-950/30 opacity-70" : "bg-zinc-900"
                         }`}
                       >
-                        <div className="grid grid-cols-[1fr_60px_70px_80px_40px] gap-1 items-center px-2 py-1.5">
+                        <div className="grid grid-cols-[1fr_60px_70px_80px_68px] gap-1 items-center px-2 py-1.5">
                           {/* Nome */}
-                          <span className={`text-sm ${it.comprado ? "line-through text-gray-500" : ""}`}>
-                            {estoqueInsuficiente && !it.comprado && (
+                          <span className={`text-sm ${it.excluido || it.comprado ? "line-through text-gray-500" : ""}`}>
+                            {estoqueInsuficiente && !it.comprado && !it.excluido && (
                               <AlertTriangle className="w-3 h-3 text-yellow-500 inline mr-1" />
                             )}
+                            {it.excluido && <span className="text-[10px] uppercase text-gray-500 mr-1">(descartado)</span>}
                             {it.nome}
                             <span className="text-xs text-gray-500 ml-1">{it.unidade}</span>
                             {temFornecedores && (
@@ -618,28 +668,47 @@ function AdminListaCompras() {
                             type="number"
                             min={0}
                             value={it.aComprar}
-                            disabled={it.comprado}
+                            disabled={it.comprado || it.excluido}
                             onChange={(e) => setAComprar(it.produto_id, Number(e.target.value))}
                             className="w-full text-center text-sm rounded px-1 py-0.5 bg-zinc-800 border border-zinc-700 transition focus:outline-none focus:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/40 disabled:opacity-40"
                           />
 
-                          {/* Checkbox comprado */}
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => marcarComprado(it)}
-                            disabled={salvando === it.produto_id}
-                            className={`flex items-center justify-center w-7 h-7 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
-                              it.comprado
-                                ? "bg-green-600 border-green-600 text-white"
-                                : "border-zinc-600 hover:border-orange-500"
-                            } disabled:opacity-40`}
-                          >
-                            {salvando === it.produto_id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              it.comprado && <Check className="w-4 h-4" />
-                            )}
-                          </motion.button>
+                          <div className="flex items-center justify-center gap-1">
+                            {/* Checkbox comprado */}
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => marcarComprado(it)}
+                              disabled={salvando === it.produto_id || it.excluido}
+                              aria-label={it.comprado ? "Desmarcar comprado" : "Marcar comprado"}
+                              className={`flex items-center justify-center w-7 h-7 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 ${
+                                it.comprado
+                                  ? "bg-green-600 border-green-600 text-white"
+                                  : "border-zinc-600 hover:border-orange-500"
+                              } disabled:opacity-40`}
+                            >
+                              {salvando === it.produto_id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                it.comprado && <Check className="w-4 h-4" />
+                              )}
+                            </motion.button>
+
+                            {/* Descartar / restaurar */}
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => marcarExcluido(it)}
+                              disabled={salvando === it.produto_id || it.comprado}
+                              aria-label={it.excluido ? "Restaurar item" : "Descartar item"}
+                              title={it.excluido ? "Restaurar item" : "Descartar item (não vamos comprar)"}
+                              className={`flex items-center justify-center w-7 h-7 rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/40 ${
+                                it.excluido
+                                  ? "bg-red-900/50 border-red-800 text-red-300"
+                                  : "border-zinc-600 hover:border-red-500 text-gray-400 hover:text-red-400"
+                              } disabled:opacity-30`}
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                            </motion.button>
+                          </div>
                         </div>
                         <AnimatePresence initial={false}>
                           {expandido && (

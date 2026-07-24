@@ -639,6 +639,8 @@ export type Database = {
           comprado: boolean
           comprado_em: string | null
           criado_em: string | null
+          excluido: boolean
+          excluido_em: string | null
           id: string
           nome_custom: string | null
           observacao: string | null
@@ -651,6 +653,8 @@ export type Database = {
           comprado?: boolean
           comprado_em?: string | null
           criado_em?: string | null
+          excluido?: boolean
+          excluido_em?: string | null
           id?: string
           nome_custom?: string | null
           observacao?: string | null
@@ -663,6 +667,8 @@ export type Database = {
           comprado?: boolean
           comprado_em?: string | null
           criado_em?: string | null
+          excluido?: boolean
+          excluido_em?: string | null
           id?: string
           nome_custom?: string | null
           observacao?: string | null
