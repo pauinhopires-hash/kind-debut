@@ -65,7 +65,7 @@ function AdminRequisicoesInternas() {
     const { data, error } = await supabase
       .from("requisicoes_internas")
       .select(`id, status, observacao, created_at, usuario_id,
-        usuarios(nome),
+        usuarios!requisicoes_internas_usuario_id_fkey(nome),
         requisicao_interna_itens(id, produto_id, quantidade, produtos(nome, unidade))`)
       .order("created_at", { ascending: false })
       .limit(100);

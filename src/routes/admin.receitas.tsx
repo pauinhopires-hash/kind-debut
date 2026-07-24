@@ -54,7 +54,7 @@ function AdminReceitas() {
     setCarregando(true);
     let q = supabase
       .from("receitas")
-      .select("id, produto_id, rendimento, unidade_rendimento, ativo, status, usuario_id, usuarios(nome), produtos(nome, unidade), receita_itens(count)")
+      .select("id, produto_id, rendimento, unidade_rendimento, ativo, status, usuario_id, usuarios!receitas_usuario_id_fkey(nome), produtos(nome, unidade), receita_itens(count)")
       .order("criado_em", { ascending: false });
     if (filtro !== "todas") q = q.eq("status", filtro);
     const [{ data: prods }, { data: recs }] = await Promise.all([

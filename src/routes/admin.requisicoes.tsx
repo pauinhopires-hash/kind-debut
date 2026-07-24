@@ -55,7 +55,7 @@ function AdminRequisicoes() {
     setCarregando(true);
     let q = supabase
       .from("requisicoes")
-      .select("id, status, observacao, created_at, usuario_id, usuarios(nome)")
+      .select("id, status, observacao, created_at, usuario_id, usuarios!requisicoes_usuario_id_fkey(nome)")
       .order("created_at", { ascending: false })
       .limit(100);
     if (filtro !== "todas") q = q.eq("status", filtro);
