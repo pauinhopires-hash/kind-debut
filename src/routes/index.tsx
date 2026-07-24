@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ShoppingCart, History, LogOut, Package, ClipboardList, BookOpen } from "lucide-react";
+import { ShoppingCart, History, LogOut, Package, ClipboardList, BookOpen, Bell, BellOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fadeUp, listItem, staggerList, tap } from "@/lib/motion";
+import { ativarNotificacoes, desativarNotificacoes, estaInscrito, pushSuportado } from "@/lib/push";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -27,6 +29,9 @@ function Index() {
   const navigate = useNavigate();
   const [nomeUsuario, setNomeUsuario] = useState("");
   const [novidades, setNovidades] = useState<Record<string, number>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+  const [pushAtivo, setPushAtivo] = useState(false);
+  const [pushCarregando, setPushCarregando] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -37,10 +42,12 @@ function Index() {
         navigate({ to: "/login" });
         return;
       }
+      setUserId(session.user.id);
       const { data } = await supabase.from("usuarios").select("nome").eq("id", session.user.id).maybeSingle();
       setNomeUsuario(data?.nome ?? session.user.email?.split("@")[0] ?? "");
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" });
       if (isAdmin) { navigate({ to: "/admin" }); return; }
+      if (pushSuportado()) setPushAtivo(await estaInscrito());
 
       const resultados = await Promise.all(
         FONTES_NOVIDADES.map(async (f) => {
@@ -73,6 +80,27 @@ function Index() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/login" });
+  };
+
+  const alternarPush = async () => {
+    if (!userId) return;
+    setPushCarregando(true);
+    try {
+      if (pushAtivo) {
+        await desativarNotificacoes();
+        setPushAtivo(false);
+        toast.success("Notificações desativadas");
+      } else {
+        await ativarNotificacoes(userId);
+        setPushAtivo(true);
+        toast.success("Notificações ativadas");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Não deu pra mexer nas notificações", { description: msg });
+    } finally {
+      setPushCarregando(false);
+    }
   };
 
   const acoes = [
@@ -130,15 +158,32 @@ function Index() {
               </p>
             )}
           </div>
-          <motion.button
-            whileHover={{ x: 2, color: "#fff" }}
-            whileTap={tap}
-            onClick={handleLogout}
-            className="text-gray-400 flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-md px-2 py-1"
-            aria-label="Sair da conta"
-          >
-            <LogOut size={16} /> Sair
-          </motion.button>
+          <div className="flex items-center gap-2">
+            {pushSuportado() && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={tap}
+                onClick={alternarPush}
+                disabled={pushCarregando}
+                className={`flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50 ${
+                  pushAtivo ? "text-orange-400" : "text-gray-400 hover:text-white"
+                }`}
+                aria-label={pushAtivo ? "Desativar notificações" : "Ativar notificações"}
+                title={pushAtivo ? "Notificações ativadas" : "Ativar notificações"}
+              >
+                {pushAtivo ? <Bell size={16} /> : <BellOff size={16} />}
+              </motion.button>
+            )}
+            <motion.button
+              whileHover={{ x: 2, color: "#fff" }}
+              whileTap={tap}
+              onClick={handleLogout}
+              className="text-gray-400 flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-md px-2 py-1"
+              aria-label="Sair da conta"
+            >
+              <LogOut size={16} /> Sair
+            </motion.button>
+          </div>
         </motion.div>
 
         <motion.div

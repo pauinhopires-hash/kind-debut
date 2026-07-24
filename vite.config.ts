@@ -25,6 +25,9 @@ export default defineConfig({
         navigateFallback: "/",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
         cleanupOutdatedCaches: true,
+        // adiciona os handlers de notificação push ao sw.js gerado, sem mexer
+        // na estratégia de cache/offline já existente.
+        importScripts: ["/push-sw.js"],
         runtimeCaching: [
           {
             // HTML navigations — always try network first so deploys propagate fast.
