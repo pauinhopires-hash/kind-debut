@@ -63,7 +63,7 @@ function AdminDashboard() {
   }, []);
 
   const fetchStats = async () => {
-    const [reqCompra, reqInternas, produtosRes, estoqueRes, receitasRes, produtosPendentesRes] = await Promise.all([
+    const [reqCompra, reqInternas, produtosRes, estoqueRes, produtosPendentesRes] = await Promise.all([
       supabase
         .from("requisicoes")
         .select("id", { count: "exact", head: true })
@@ -75,10 +75,6 @@ function AdminDashboard() {
       supabase.from("produtos").select("id, estoque_minimo").eq("ativo", true).gt("estoque_minimo", 0),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
       supabase
-        .from("receitas")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pendente"),
-      supabase
         .from("produtos")
         .select("id", { count: "exact", head: true })
         .eq("status", "pendente"),
@@ -88,7 +84,6 @@ function AdminDashboard() {
     if (reqInternas.error) console.error("reqInternas", reqInternas.error);
     if (produtosRes.error) console.error("produtos", produtosRes.error);
     if (estoqueRes.error) console.error("estoque", estoqueRes.error);
-    if (receitasRes.error) console.error("receitas", receitasRes.error);
     if (produtosPendentesRes.error) console.error("produtosPendentes", produtosPendentesRes.error);
 
     // Soma por produto (um produto pode ter estoque em vários locais).
@@ -104,7 +99,6 @@ function AdminDashboard() {
       requisicoesPendentes: reqCompra.count ?? 0,
       requisicoesInternas: reqInternas.count ?? 0,
       produtosBaixoEstoque: baixo,
-      receitasPendentes: receitasRes.count ?? 0,
       produtosPendentes: produtosPendentesRes.count ?? 0,
     });
   };
