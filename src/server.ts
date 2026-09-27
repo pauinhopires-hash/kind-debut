@@ -1,11 +1,8 @@
 import "./lib/error-capture";
 
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { serve } from "srvx/node";
-import { serveStatic } from "srvx/static";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -81,23 +78,28 @@ async function fetch(request: Request, env: unknown, ctx: unknown): Promise<Resp
   }
 }
 
-// @tanstack/react-start/server-entry only handles SSR routes — unlike Nitro's own
-// generated entry, it does NOT serve the built client assets (dist/client/*), so we
-// serve those ourselves before falling back to the SSR handler.
-const clientDir = join(dirname(fileURLToPath(import.meta.url)), "../client");
-
-// Firebase App Hosting (Cloud Run) runs this file as a plain Node process — unlike
-// Cloudflare Workers, nothing else calls .fetch() for us, so we must bind our own
-// HTTP server on $PORT (same approach Nitro's own node-server preset uses).
-// Guarded to production only — `vite dev` also evaluates this module for its own
-// SSR middleware, and would otherwise open a second, competing HTTP server.
-if (!import.meta.env.DEV) {
-  const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
-  serve({
-    port,
-    middleware: [serveStatic({ dir: clientDir })],
-    fetch: (request: Request) => fetch(request, undefined, undefined),
-  });
+// This module runs on the Lovable edge runtime (Cloudflare Workers), where the
+// platform calls the exported `fetch` itself and binding a TCP port is not allowed
+// (doing so crashed the published site at load time with a 502).
+// A standalone Node host (Cloud Run / Firebase App Hosting) sets K_SERVICE; only
+// there do we lazily boot an HTTP server and serve the built client assets.
+if (!import.meta.env.DEV && process.env.K_SERVICE) {
+  void (async () => {
+    const [{ serve }, { serveStatic }, { fileURLToPath }, { dirname, join }] = await Promise.all([
+      import("srvx/node"),
+      import("srvx/static"),
+      import("node:url"),
+      import("node:path"),
+    ]);
+    const clientDir = join(dirname(fileURLToPath(import.meta.url)), "../client");
+    const port = Number.parseInt(process.env.PORT ?? "", 10) || 8080;
+    serve({
+      port,
+      middleware: [serveStatic({ dir: clientDir })],
+      fetch: (request: Request) => fetch(request, undefined, undefined),
+    });
+  })();
 }
+
 
 export default { fetch };
