@@ -1,0 +1,1 @@
+ALTER TABLE public.requisicao_itens ADD COLUMN IF NOT EXISTS nome_custom text;
