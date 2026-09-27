@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ShoppingCart, History, LogOut, Package, ClipboardList, BookOpen, Bell, BellOff, PackagePlus } from "lucide-react";
+import { ShoppingCart, History, LogOut, Package, ClipboardList, Bell, BellOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
