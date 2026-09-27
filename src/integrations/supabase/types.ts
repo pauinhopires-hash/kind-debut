@@ -35,16 +35,19 @@ export type Database = {
       estoque_atual: {
         Row: {
           atualizado_em: string
+          local: string
           produto_id: string
           quantidade: number
         }
         Insert: {
           atualizado_em?: string
+          local?: string
           produto_id: string
           quantidade?: number
         }
         Update: {
           atualizado_em?: string
+          local?: string
           produto_id?: string
           quantidade?: number
         }
@@ -52,11 +55,35 @@ export type Database = {
           {
             foreignKeyName: "estoque_atual_produto_id_fkey"
             columns: ["produto_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
+      }
+      fornecedores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome_empresa: string
+          whatsapp: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome_empresa: string
+          whatsapp?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome_empresa?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       funcionario_pins: {
         Row: {
@@ -128,12 +155,55 @@ export type Database = {
           },
         ]
       }
+      funcoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      locais: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       movimentacoes_estoque: {
         Row: {
           created_at: string
           estoque_antes: number
           estoque_depois: number
           id: string
+          local: string
           observacao: string | null
           produto_id: string
           quantidade: number
@@ -146,6 +216,7 @@ export type Database = {
           estoque_antes: number
           estoque_depois: number
           id?: string
+          local?: string
           observacao?: string | null
           produto_id: string
           quantidade: number
@@ -158,6 +229,7 @@ export type Database = {
           estoque_antes?: number
           estoque_depois?: number
           id?: string
+          local?: string
           observacao?: string | null
           produto_id?: string
           quantidade?: number
@@ -187,23 +259,94 @@ export type Database = {
           created_at: string
           id: string
           nome: string
+          slug: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
+          slug?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
+          slug?: string | null
         }
         Relationships: []
+      }
+      produto_fornecedores: {
+        Row: {
+          created_at: string
+          fornecedor_id: string
+          produto_id: string
+        }
+        Insert: {
+          created_at?: string
+          fornecedor_id: string
+          produto_id: string
+        }
+        Update: {
+          created_at?: string
+          fornecedor_id?: string
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_fornecedores_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_fornecedores_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_funcoes: {
+        Row: {
+          created_at: string
+          funcao_id: string
+          produto_id: string
+        }
+        Insert: {
+          created_at?: string
+          funcao_id: string
+          produto_id: string
+        }
+        Update: {
+          created_at?: string
+          funcao_id?: string
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_funcoes_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_funcoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       produtos: {
         Row: {
           ativo: boolean
           created_at: string
+          decidido_em: string | null
+          decidido_por: string | null
           estoque_minimo: number
           grupo: string | null
           id: string
@@ -211,13 +354,17 @@ export type Database = {
           nome: string
           perfil_id: string | null
           setor: string | null
+          status: string
           subgrupo: string | null
+          sugerido_por: string | null
           unidade: string
           valor_unitario: number | null
         }
         Insert: {
           ativo?: boolean
           created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           estoque_minimo?: number
           grupo?: string | null
           id?: string
@@ -225,13 +372,17 @@ export type Database = {
           nome: string
           perfil_id?: string | null
           setor?: string | null
+          status?: string
           subgrupo?: string | null
+          sugerido_por?: string | null
           unidade?: string
           valor_unitario?: number | null
         }
         Update: {
           ativo?: boolean
           created_at?: string
+          decidido_em?: string | null
+          decidido_por?: string | null
           estoque_minimo?: number
           grupo?: string | null
           id?: string
@@ -239,16 +390,32 @@ export type Database = {
           nome?: string
           perfil_id?: string | null
           setor?: string | null
+          status?: string
           subgrupo?: string | null
+          sugerido_por?: string | null
           unidade?: string
           valor_unitario?: number | null
         }
         Relationships: [
           {
+            foreignKeyName: "produtos_decidido_por_fkey"
+            columns: ["decidido_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "produtos_perfil_id_fkey"
             columns: ["perfil_id"]
             isOneToOne: false
             referencedRelation: "perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_sugerido_por_fkey"
+            columns: ["sugerido_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]
@@ -388,6 +555,7 @@ export type Database = {
         Row: {
           created_at: string
           decidido_em: string | null
+          decidido_por: string | null
           id: string
           observacao: string | null
           perfil_id: string | null
@@ -397,6 +565,7 @@ export type Database = {
         Insert: {
           created_at?: string
           decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           perfil_id?: string | null
@@ -406,6 +575,7 @@ export type Database = {
         Update: {
           created_at?: string
           decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           perfil_id?: string | null
@@ -413,6 +583,13 @@ export type Database = {
           usuario_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "requisicoes_decidido_por_fkey"
+            columns: ["decidido_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "requisicoes_perfil_id_fkey"
             columns: ["perfil_id"]
@@ -433,6 +610,7 @@ export type Database = {
         Row: {
           created_at: string
           decidido_em: string | null
+          decidido_por: string | null
           id: string
           observacao: string | null
           status: string
@@ -442,6 +620,7 @@ export type Database = {
         Insert: {
           created_at?: string
           decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           status?: string
@@ -451,6 +630,7 @@ export type Database = {
         Update: {
           created_at?: string
           decidido_em?: string | null
+          decidido_por?: string | null
           id?: string
           observacao?: string | null
           status?: string
@@ -458,6 +638,13 @@ export type Database = {
           usuario_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "requisicoes_internas_decidido_por_fkey"
+            columns: ["decidido_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "requisicoes_internas_usuario_id_fkey"
             columns: ["usuario_id"]
@@ -493,27 +680,40 @@ export type Database = {
           ativo: boolean
           created_at: string
           email: string
+          funcao_id: string | null
           id: string
           nome: string
           perfil_id: string | null
+          ve_todos_setores: boolean
         }
         Insert: {
           ativo?: boolean
           created_at?: string
           email: string
+          funcao_id?: string | null
           id: string
           nome: string
           perfil_id?: string | null
+          ve_todos_setores?: boolean
         }
         Update: {
           ativo?: boolean
           created_at?: string
           email?: string
+          funcao_id?: string | null
           id?: string
           nome?: string
           perfil_id?: string | null
+          ve_todos_setores?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "usuarios_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "usuarios_perfil_id_fkey"
             columns: ["perfil_id"]
