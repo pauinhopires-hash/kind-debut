@@ -138,11 +138,9 @@ function PedidoPage() {
     [quantidades],
   );
 
-  // Restrição por função: admin, "vê todos os setores" e usuários sem
-  // função atribuída ainda continuam vendo tudo. Só quem tem função E
-  // não tem o escape hatch marcado fica restrito aos produtos dela.
-  const restritoPorFuncao =
-    !isAdmin && !!usuario?.funcao_id && !usuario?.ve_todos_setores;
+  // Todos os funcionários veem todos os produtos de todos os setores.
+  // O filtro de setor é uma escolha livre na tela, não uma restrição.
+  const restritoPorFuncao = false;
 
   const produtosFiltrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
