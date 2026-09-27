@@ -34,6 +34,7 @@ import { Route as AdminMovimentacoesRouteImport } from './routes/admin.movimenta
 import { Route as AdminListaComprasRouteImport } from './routes/admin.lista-compras'
 import { Route as AdminIndicadoresRouteImport } from './routes/admin.indicadores'
 import { Route as AdminImportarEstoqueRouteImport } from './routes/admin.importar-estoque'
+import { Route as AdminFuncionariosRouteImport } from './routes/admin.funcionarios'
 import { Route as AdminFornecedoresRouteImport } from './routes/admin.fornecedores'
 import { Route as AdminEstoqueRouteImport } from './routes/admin.estoque'
 import { Route as PedidoEditarIdRouteImport } from './routes/pedido.editar.$id'
@@ -164,6 +165,11 @@ const AdminImportarEstoqueRoute = AdminImportarEstoqueRouteImport.update({
   path: '/importar-estoque',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFuncionariosRoute = AdminFuncionariosRouteImport.update({
+  id: '/funcionarios',
+  path: '/funcionarios',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFornecedoresRoute = AdminFornecedoresRouteImport.update({
   id: '/fornecedores',
   path: '/fornecedores',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/sugerir-produto': typeof SugerirProdutoRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
+  '/admin/funcionarios': typeof AdminFuncionariosRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/sugerir-produto': typeof SugerirProdutoRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
+  '/admin/funcionarios': typeof AdminFuncionariosRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/sugerir-produto': typeof SugerirProdutoRoute
   '/admin/estoque': typeof AdminEstoqueRoute
   '/admin/fornecedores': typeof AdminFornecedoresRoute
+  '/admin/funcionarios': typeof AdminFuncionariosRoute
   '/admin/importar-estoque': typeof AdminImportarEstoqueRoute
   '/admin/indicadores': typeof AdminIndicadoresRoute
   '/admin/lista-compras': typeof AdminListaComprasRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/sugerir-produto'
     | '/admin/estoque'
     | '/admin/fornecedores'
+    | '/admin/funcionarios'
     | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/sugerir-produto'
     | '/admin/estoque'
     | '/admin/fornecedores'
+    | '/admin/funcionarios'
     | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
@@ -346,6 +357,7 @@ export interface FileRouteTypes {
     | '/sugerir-produto'
     | '/admin/estoque'
     | '/admin/fornecedores'
+    | '/admin/funcionarios'
     | '/admin/importar-estoque'
     | '/admin/indicadores'
     | '/admin/lista-compras'
@@ -554,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminImportarEstoqueRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/funcionarios': {
+      id: '/admin/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/admin/funcionarios'
+      preLoaderRoute: typeof AdminFuncionariosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/fornecedores': {
       id: '/admin/fornecedores'
       path: '/fornecedores'
@@ -581,6 +600,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminEstoqueRoute: typeof AdminEstoqueRoute
   AdminFornecedoresRoute: typeof AdminFornecedoresRoute
+  AdminFuncionariosRoute: typeof AdminFuncionariosRoute
   AdminImportarEstoqueRoute: typeof AdminImportarEstoqueRoute
   AdminIndicadoresRoute: typeof AdminIndicadoresRoute
   AdminListaComprasRoute: typeof AdminListaComprasRoute
@@ -599,6 +619,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminEstoqueRoute: AdminEstoqueRoute,
   AdminFornecedoresRoute: AdminFornecedoresRoute,
+  AdminFuncionariosRoute: AdminFuncionariosRoute,
   AdminImportarEstoqueRoute: AdminImportarEstoqueRoute,
   AdminIndicadoresRoute: AdminIndicadoresRoute,
   AdminListaComprasRoute: AdminListaComprasRoute,
