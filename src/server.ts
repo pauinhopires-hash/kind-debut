@@ -1,11 +1,8 @@
 import "./lib/error-capture";
 
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { serve } from "srvx/node";
-import { serveStatic } from "srvx/static";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
