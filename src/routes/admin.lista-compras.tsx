@@ -333,7 +333,7 @@ function AdminListaCompras() {
     try {
       const { error } = await supabase
         .from("requisicao_itens")
-        .update({ excluido: novoExcluido, excluido_em: novoExcluido ? new Date().toISOString() : null })
+        .update({ excluido: novoExcluido })
         .in("id", it.item_ids);
       if (error) throw error;
       toast.success(novoExcluido ? `${it.nome} descartado` : `${it.nome} restaurado`);

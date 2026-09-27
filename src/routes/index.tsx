@@ -17,8 +17,6 @@ export const Route = createFileRoute("/")({
 const FONTES_NOVIDADES = [
   { rota: "/historico" as const, chave: "novidades_visto_historico", tabela: "requisicoes" as const },
   { rota: "/historico-interno" as const, chave: "novidades_visto_historico_interno", tabela: "requisicoes_internas" as const },
-  { rota: "/solicitar-receita" as const, chave: "novidades_visto_solicitar_receita", tabela: "receitas" as const },
-  { rota: "/sugerir-produto" as const, chave: "novidades_visto_sugerir_produto", tabela: "produtos" as const },
 ];
 
 function marcarComoVisto(rota: string) {

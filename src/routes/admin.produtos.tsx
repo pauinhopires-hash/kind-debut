@@ -293,14 +293,6 @@ function AdminProdutos() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={tap}
-            onClick={() => navigate({ to: "/admin/importar-estoque" })}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-bold uppercase text-foreground transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
-          >
-            <FileSpreadsheet size={14} /> Importar em massa
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={tap}
             onClick={abrirNovo}
             className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold uppercase text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40"
           >
