@@ -208,13 +208,12 @@ function PedidoPage() {
 
     // Determina perfil_id da requisição: admin → escolhido no filtro ou perfil do 1º produto
     let perfilDaReq: string | null = usuario.perfil_id;
-    if (isAdmin) {
-      if (perfilFiltro) {
-        perfilDaReq = perfilFiltro;
-      } else {
-        const primeiro = produtos.find((p) => p.id === itensSelecionados[0][0]);
-        perfilDaReq = primeiro?.perfil_id ?? null;
-      }
+    if (isAdmin && perfilFiltro) {
+      perfilDaReq = perfilFiltro;
+    } else if (isAdmin || !perfilDaReq) {
+      // Funcionários por PIN não têm perfil: usa o setor do primeiro produto escolhido
+      const primeiro = produtos.find((p) => p.id === itensSelecionados[0][0]);
+      perfilDaReq = primeiro?.perfil_id ?? perfilDaReq;
     }
     if (!perfilDaReq) {
       toast.error("Não foi possível determinar o setor deste pedido. Confirme se seu perfil está configurado (fale com um admin).");
