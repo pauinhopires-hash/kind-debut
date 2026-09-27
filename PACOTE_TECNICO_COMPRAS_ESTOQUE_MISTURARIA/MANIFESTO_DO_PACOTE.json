@@ -1,0 +1,78 @@
+{
+  "nome_do_pacote": "PACOTE_TECNICO_COMPRAS_ESTOQUE_MISTURARIA",
+  "produto": "Misturaria Fina Mezcla - Compras e Estoque",
+  "versao_do_produto": "NAO IDENTIFICADO",
+  "versao_do_pacote": "1.0.0",
+  "data_de_geracao": "2026-09-27",
+  "gerado_por": "Lovable (agente)",
+  "escopo": "Documentacao tecnica e operacional completa do aplicativo, sem dados reais",
+  "repositorio": {
+    "github_conectado": false,
+    "origem": "repositorio privado da plataforma Lovable",
+    "branch": "edit/edt-17422137-a438-40d2-9187-eed3e456f3f5",
+    "commit": "7e60e1d"
+  },
+  "ambientes": {
+    "producao": "https://misturariafinamezclacompraseestoque.lovable.app",
+    "previsualizacao": "https://id-preview--3c5020ac-c411-444e-b122-1c6b9d236c01.lovable.app",
+    "desenvolvimento": "http://localhost:8080",
+    "banco_compartilhado_entre_previsualizacao_e_producao": true
+  },
+  "stack": {
+    "framework": "TanStack Start v1",
+    "ui": "React 19.2.0",
+    "build": "Vite 7.3.1",
+    "estilo": "Tailwind CSS v4 + shadcn/ui (Radix)",
+    "linguagem": "TypeScript 5.8",
+    "runtime_servidor": "Cloudflare Workers (borda)",
+    "banco": "PostgreSQL gerenciado (Lovable Cloud / Supabase)",
+    "pwa": "vite-plugin-pwa + Workbox",
+    "node_testado": "v22.22.0",
+    "bun_testado": "1.3.3"
+  },
+  "banco": {
+    "schema": "public",
+    "tabelas": 19,
+    "funcoes": 7,
+    "gatilhos": 5,
+    "rls_ativa_em_todas_as_tabelas": true,
+    "migracoes_incluidas": 38
+  },
+  "conteudo": [
+    "01_IDENTIDADE_DO_PRODUTO.md",
+    "02_CODIGO_FONTE/",
+    "03_BANCO_DE_DADOS/",
+    "04_LOGIN_E_PERMISSOES.md",
+    "05_FLUXOS_OPERACIONAIS.md",
+    "06_INTEGRACOES.md",
+    "07_DEPLOY_E_INFRAESTRUTURA.md",
+    "08_BACKUP_E_RESTAURACAO.md",
+    "09_TESTES/RESULTADO_DOS_TESTES.md",
+    "10_SEGURANCA_E_PRIVACIDADE.md",
+    "11_MANUAL_FUNCIONARIO.md",
+    "12_MANUAL_GESTOR.md",
+    "13_MANUAL_ADMINISTRADOR.md",
+    "14_MANUAL_TECNICO.md",
+    "15_INVENTARIO_FINAL.md",
+    "PLANO_DE_ROLLBACK.md",
+    "PLANO_DE_CONTINUIDADE.md",
+    "MANIFESTO_DO_PACOTE.json"
+  ],
+  "privacidade": {
+    "contem_dados_pessoais_reais": false,
+    "contem_credenciais": false,
+    "dados_de_exemplo": "100% ficticios (03_BANCO_DE_DADOS/seed_ficticio.sql)"
+  },
+  "isolamento": {
+    "alterou_producao": false,
+    "fez_deploy": false,
+    "alterou_dados": false
+  },
+  "testes": {
+    "checagem_de_tipos": "PASS",
+    "build_de_producao": "PASS",
+    "producao_http": 200,
+    "aplicacao_local_http": 200,
+    "suite_automatizada": "inexistente"
+  }
+}
