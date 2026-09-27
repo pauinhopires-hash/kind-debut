@@ -133,20 +133,6 @@ function Index() {
       rota: "/historico" as const,
       cor: "from-zinc-600 to-zinc-700",
     },
-    {
-      label: "Propor Ficha Técnica",
-      descricao: "Sugira uma receita pro seu setor",
-      icon: BookOpen,
-      rota: "/solicitar-receita" as const,
-      cor: "from-lime-600 to-lime-700",
-    },
-    {
-      label: "Sugerir Produto",
-      descricao: "Falta algo no cadastro? Sugira aqui",
-      icon: PackagePlus,
-      rota: "/sugerir-produto" as const,
-      cor: "from-teal-600 to-teal-700",
-    },
   ];
 
   return (

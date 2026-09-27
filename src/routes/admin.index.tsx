@@ -247,6 +247,14 @@ function AdminDashboard() {
           cor: "bg-zinc-600",
         },
         {
+          label: "Funcionários e PINs",
+          descricao: "Entrada da equipe por PIN",
+          icon: IdCard,
+          rota: "/admin/funcionarios" as const,
+          badge: 0,
+          cor: "bg-orange-600",
+        },
+        {
           label: "Usuários",
           descricao: "Gerenciar acessos",
           icon: Users,
