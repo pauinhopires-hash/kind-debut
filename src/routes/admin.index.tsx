@@ -30,7 +30,6 @@ type Stats = {
   requisicoesPendentes: number;
   requisicoesInternas: number;
   produtosBaixoEstoque: number;
-  receitasPendentes: number;
   produtosPendentes: number;
 };
 
@@ -41,7 +40,6 @@ function AdminDashboard() {
     requisicoesPendentes: 0,
     requisicoesInternas: 0,
     produtosBaixoEstoque: 0,
-    receitasPendentes: 0,
     produtosPendentes: 0,
   });
 
@@ -63,7 +61,7 @@ function AdminDashboard() {
   }, []);
 
   const fetchStats = async () => {
-    const [reqCompra, reqInternas, produtosRes, estoqueRes, receitasRes, produtosPendentesRes] = await Promise.all([
+    const [reqCompra, reqInternas, produtosRes, estoqueRes, produtosPendentesRes] = await Promise.all([
       supabase
         .from("requisicoes")
         .select("id", { count: "exact", head: true })
@@ -75,10 +73,6 @@ function AdminDashboard() {
       supabase.from("produtos").select("id, estoque_minimo").eq("ativo", true).gt("estoque_minimo", 0),
       supabase.from("estoque_atual").select("produto_id, quantidade"),
       supabase
-        .from("receitas")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pendente"),
-      supabase
         .from("produtos")
         .select("id", { count: "exact", head: true })
         .eq("status", "pendente"),
@@ -88,7 +82,6 @@ function AdminDashboard() {
     if (reqInternas.error) console.error("reqInternas", reqInternas.error);
     if (produtosRes.error) console.error("produtos", produtosRes.error);
     if (estoqueRes.error) console.error("estoque", estoqueRes.error);
-    if (receitasRes.error) console.error("receitas", receitasRes.error);
     if (produtosPendentesRes.error) console.error("produtosPendentes", produtosPendentesRes.error);
 
     // Soma por produto (um produto pode ter estoque em vários locais).
@@ -104,7 +97,6 @@ function AdminDashboard() {
       requisicoesPendentes: reqCompra.count ?? 0,
       requisicoesInternas: reqInternas.count ?? 0,
       produtosBaixoEstoque: baixo,
-      receitasPendentes: receitasRes.count ?? 0,
       produtosPendentes: produtosPendentesRes.count ?? 0,
     });
   };
@@ -141,14 +133,6 @@ function AdminDashboard() {
           rota: "/admin/lista-compras" as const,
           badge: 0,
           cor: "bg-orange-700",
-        },
-        {
-          label: "Fornecedores",
-          descricao: "Empresas e WhatsApp por produto",
-          icon: Building2,
-          rota: "/admin/fornecedores" as const,
-          badge: 0,
-          cor: "bg-orange-800",
         },
       ],
     },
@@ -196,55 +180,18 @@ function AdminDashboard() {
           badge: stats.produtosPendentes,
           cor: "bg-zinc-600",
         },
-        {
-          label: "Setores e Locais",
-          descricao: "Departamentos e locais físicos de estoque",
-          icon: Tags,
-          rota: "/admin/setores" as const,
-          badge: 0,
-          cor: "bg-zinc-600",
-        },
-        {
-          label: "Estoque em Planilha",
-          descricao: "Importar / exportar em lote",
-          icon: FileSpreadsheet,
-          rota: "/admin/importar-estoque" as const,
-          badge: 0,
-          cor: "bg-zinc-700",
-        },
-      ],
-    },
-    {
-      group: "Produção",
-      items: [
-        {
-          label: "Produção",
-          descricao: "Ordens de produção",
-          icon: Factory,
-          rota: "/admin/producao" as const,
-          badge: 0,
-          cor: "bg-amber-800",
-        },
-        {
-          label: "Fichas técnicas",
-          descricao: "Receitas e insumos",
-          icon: BookOpen,
-          rota: "/admin/receitas" as const,
-          badge: stats.receitasPendentes,
-          cor: "bg-amber-900",
-        },
       ],
     },
     {
       group: "Gestão",
       items: [
         {
-          label: "Indicadores",
-          descricao: "Métricas e KPIs",
-          icon: TrendingUp,
-          rota: "/admin/indicadores" as const,
+          label: "Funcionários e PINs",
+          descricao: "Entrada da equipe por PIN",
+          icon: IdCard,
+          rota: "/admin/funcionarios" as const,
           badge: 0,
-          cor: "bg-zinc-600",
+          cor: "bg-orange-600",
         },
         {
           label: "Usuários",

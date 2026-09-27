@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ShoppingCart, History, LogOut, Package, ClipboardList, BookOpen, Bell, BellOff, PackagePlus } from "lucide-react";
+import { ShoppingCart, History, LogOut, Package, ClipboardList, Bell, BellOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +17,6 @@ export const Route = createFileRoute("/")({
 const FONTES_NOVIDADES = [
   { rota: "/historico" as const, chave: "novidades_visto_historico", tabela: "requisicoes" as const },
   { rota: "/historico-interno" as const, chave: "novidades_visto_historico_interno", tabela: "requisicoes_internas" as const },
-  { rota: "/solicitar-receita" as const, chave: "novidades_visto_solicitar_receita", tabela: "receitas" as const },
-  { rota: "/sugerir-produto" as const, chave: "novidades_visto_sugerir_produto", tabela: "produtos" as const },
 ];
 
 function marcarComoVisto(rota: string) {
@@ -132,20 +130,6 @@ function Index() {
       icon: History,
       rota: "/historico" as const,
       cor: "from-zinc-600 to-zinc-700",
-    },
-    {
-      label: "Propor Ficha Técnica",
-      descricao: "Sugira uma receita pro seu setor",
-      icon: BookOpen,
-      rota: "/solicitar-receita" as const,
-      cor: "from-lime-600 to-lime-700",
-    },
-    {
-      label: "Sugerir Produto",
-      descricao: "Falta algo no cadastro? Sugira aqui",
-      icon: PackagePlus,
-      rota: "/sugerir-produto" as const,
-      cor: "from-teal-600 to-teal-700",
     },
   ];
 
