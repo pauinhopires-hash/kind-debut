@@ -6,7 +6,11 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Em produção o servidor roda em edge runtime sem resolução de módulos em
+  // tempo de execução: tudo (ex.: h3-v2) precisa estar embutido no bundle.
+  // No dev isso quebra o module runner do Vite (react CJS), então só no build.
+  ...(command === "build" ? { ssr: { noExternal: true } } : {}),
   plugins: [
     tsConfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),
@@ -61,4 +65,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+}));
