@@ -30,7 +30,6 @@ type Stats = {
   requisicoesPendentes: number;
   requisicoesInternas: number;
   produtosBaixoEstoque: number;
-  receitasPendentes: number;
   produtosPendentes: number;
 };
 
@@ -41,7 +40,6 @@ function AdminDashboard() {
     requisicoesPendentes: 0,
     requisicoesInternas: 0,
     produtosBaixoEstoque: 0,
-    receitasPendentes: 0,
     produtosPendentes: 0,
   });
 
@@ -136,14 +134,6 @@ function AdminDashboard() {
           badge: 0,
           cor: "bg-orange-700",
         },
-        {
-          label: "Fornecedores",
-          descricao: "Empresas e WhatsApp por produto",
-          icon: Building2,
-          rota: "/admin/fornecedores" as const,
-          badge: 0,
-          cor: "bg-orange-800",
-        },
       ],
     },
     {
@@ -190,56 +180,11 @@ function AdminDashboard() {
           badge: stats.produtosPendentes,
           cor: "bg-zinc-600",
         },
-        {
-          label: "Setores e Locais",
-          descricao: "Departamentos e locais físicos de estoque",
-          icon: Tags,
-          rota: "/admin/setores" as const,
-          badge: 0,
-          cor: "bg-zinc-600",
-        },
-        {
-          label: "Estoque em Planilha",
-          descricao: "Importar / exportar em lote",
-          icon: FileSpreadsheet,
-          rota: "/admin/importar-estoque" as const,
-          badge: 0,
-          cor: "bg-zinc-700",
-        },
-      ],
-    },
-    {
-      group: "Produção",
-      items: [
-        {
-          label: "Produção",
-          descricao: "Ordens de produção",
-          icon: Factory,
-          rota: "/admin/producao" as const,
-          badge: 0,
-          cor: "bg-amber-800",
-        },
-        {
-          label: "Fichas técnicas",
-          descricao: "Receitas e insumos",
-          icon: BookOpen,
-          rota: "/admin/receitas" as const,
-          badge: stats.receitasPendentes,
-          cor: "bg-amber-900",
-        },
       ],
     },
     {
       group: "Gestão",
       items: [
-        {
-          label: "Indicadores",
-          descricao: "Métricas e KPIs",
-          icon: TrendingUp,
-          rota: "/admin/indicadores" as const,
-          badge: 0,
-          cor: "bg-zinc-600",
-        },
         {
           label: "Funcionários e PINs",
           descricao: "Entrada da equipe por PIN",
