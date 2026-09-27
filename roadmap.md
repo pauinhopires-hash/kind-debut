@@ -1,7 +1,9 @@
-# Roadmap
+# Roadmap — Misturaria Compras & Estoque
 
-- [ ] Aplicar a marca Misturaria Fina Mezcla (cores/tipografia do manual)
-- [ ] Simplificar o app: apenas Compras e Baixa de Estoque
-- [ ] Login por PIN para funcionários (seleção de nome + teclado numérico)
-- [ ] Cadastrar os 12 funcionários com seus PINs (incluindo Kamyle Vitória, PIN 1234)
-- [ ] Tela admin para gerenciar funcionários e PINs
+- [x] Aplicar a marca Misturaria (preto + laranja, Bebas Neue nos títulos)
+- [x] Simplificar o app: apenas Compras e Baixa de Estoque
+- [x] Entrada por PIN (escolher o nome + teclado numérico) com opção de admin por e-mail/senha
+- [x] Cadastrar os 12 funcionários com seus PINs
+- [x] Tela admin para gerenciar funcionários e PINs (/admin/funcionarios)
+- [x] Remover telas fora do foco (produção, fichas técnicas, fornecedores, setores, indicadores, sugestões)
+- [ ] Publicar a nova versão
