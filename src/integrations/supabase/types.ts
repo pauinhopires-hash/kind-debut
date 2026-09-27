@@ -58,6 +58,76 @@ export type Database = {
           },
         ]
       }
+      funcionario_pins: {
+        Row: {
+          created_at: string
+          funcionario_id: string
+          pin: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          funcionario_id: string
+          pin: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          funcionario_id?: string
+          pin?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionario_pins_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: true
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionarios: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          funcao: string | null
+          id: string
+          login_email: string
+          nome: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          funcao?: string | null
+          id?: string
+          login_email: string
+          nome: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          funcao?: string | null
+          id?: string
+          login_email?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimentacoes_estoque: {
         Row: {
           created_at: string
