@@ -6,4 +6,4 @@
 - [x] Cadastrar os 12 funcionários com seus PINs
 - [x] Tela admin para gerenciar funcionários e PINs (/admin/funcionarios)
 - [x] Remover telas fora do foco (produção, fichas técnicas, fornecedores, setores, indicadores, sugestões)
-- [ ] Publicar a nova versão
+- [x] Publicar a nova versão
